@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeArch V2.5 - 职业执行力审计系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        base: '#000000',
+                        primary: '#3b82f6',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        panel: '#1c1c1e'
+                    },
+                    fontFamily: {
+                        mono: ['"Fira Code"', '"Courier New"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(28, 28, 30, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover { border-color: rgba(255, 255, 255, 0.15); background: rgba(28, 28, 30, 0.85); }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+        .nav-btn.active { color: #3b82f6; background: rgba(59,130,246,0.15); border-radius: 0.75rem; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        input[type="date"]::-webkit-calendar-picker-indicator, input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+
+        .tag-input-container {
+            display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; min-height: 42px;
+            background: rgba(44, 44, 46, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.5rem; align-items: center;
+        }
+        .tag-input-container:focus-within { border-color: #3b82f6; }
+        .tag-badge {
+            display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px;
+            background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        .dropdown-menu {
+            position: absolute; top: 105%; left: 0; right: 0; background: #1c1c1e; border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.6rem; box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.8); z-index: 100; max-height: 220px; overflow-y: auto;
+        }
+        .bulk-checkbox {
+            appearance: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 4px; cursor: pointer; position: relative; transition: all 0.2s;
+        }
+        .bulk-checkbox:checked { background: #3b82f6; border-color: #3b82f6; }
+        .bulk-checkbox:checked::after {
+            content: '✓'; color: white; position: absolute; font-size: 10px; font-weight: bold; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        }
+        .halt-overlay {
+            position: fixed; inset: 0; z-index: 9999; background: rgba(127, 29, 29, 0.95);
+            backdrop-filter: blur(16px); display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-base text-gray-200 h-screen overflow-hidden flex">
+
+    <!-- 侧边导航 -->
+    <aside class="w-20 border-r border-white/5 flex flex-col items-center py-6 space-y-8 z-10 shrink-0 bg-base">
+        <div class="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center text-primary font-bold shadow-[0_0_15px_rgba(59,130,246,0.3)] cursor-pointer" onclick="location.reload()">TA</div>
+        <nav class="flex flex-col space-y-4 flex-1 text-gray-500 w-full px-2 text-center">
+            <button onclick="switchView('view-dashboard', this)" class="nav-btn active p-3 hover:text-primary transition-all flex justify-center" title="Dashboard">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            </button>
+            <button onclick="switchView('view-analytics', this)" class="nav-btn p-3 hover:text-primary transition-all flex justify-center" title="Analytics">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </button>
+            <button onclick="switchView('view-history', this)" class="nav-btn p-3 hover:text-primary transition-all flex justify-center" title="History">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
+            <button onclick="switchView('view-settings', this)" class="nav-btn p-3 hover:text-primary transition-all flex justify-center" title="Settings">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+            </button>
+        </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col p-6 overflow-hidden relative bg-base">
+        <header class="flex justify-between items-center mb-6 shrink-0">
+            <div class="flex space-x-3">
+                <select id="unit-filter" class="bg-white/5 border border-white/10 text-sm rounded-lg px-3 py-2 outline-none focus:border-primary" onchange="refreshDashboard()">
+                    <option value="tick">全局单位: Ticks</option>
+                    <option value="usd">全局单位: USD</option>
+                </select>
+                <select id="global-account-filter" class="bg-primary/10 text-primary font-bold border border-primary/20 text-sm rounded-lg px-3 py-2 outline-none focus:border-primary" onchange="refreshDashboard()">
+                    <option value="ALL">所有账号 (All Accounts)</option>
+                </select>
+            </div>
+            <!-- 动态主按钮：状态 A (蓝色录入) / 状态 B (绿色结单) -->
+            <button id="main-logger-btn" onclick="toggleMainModal()" class="bg-primary hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-bold shadow-lg flex items-center transition-all hover:scale-105 active:scale-95">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                <span>+ Trade Logger</span>
+            </button>
+        </header>
+
+        <div class="overflow-y-auto pr-2 flex-1 pb-10">
+            
+            <!-- Dashboard View -->
+            <div id="view-dashboard-components" class="space-y-6">
+                <!-- 6 卡片 布局 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="dashboard-cards"></div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card p-6 min-h-[300px] flex flex-col relative overflow-hidden">
+                        <h2 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-widest shrink-0">Equity Curve (资金曲线)</h2>
+                        <div class="w-full flex-1 relative min-h-0"><canvas id="balanceLineChart"></canvas></div>
+                    </div>
+                    <div class="glass-card p-6 min-h-[300px] flex flex-col relative overflow-hidden">
+                        <div class="flex justify-between items-center mb-4 shrink-0">
+                            <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">Net Daily P&L</h2>
+                        </div>
+                        <div class="w-full flex-1 relative min-h-0"><canvas id="dailyPnlBarChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            
+            <section id="view-dashboard" class="view-section animate-fade-in block mt-6">
+                <div class="glass-card p-6">
+                    <div id="calendar-header" class="flex justify-between items-center mb-6 border-b border-white/10 pb-4"></div>
+                    <div id="calendar-grid"></div>
+                </div>
+            </section>
+            
+            <!-- History View (带批量删除与独立编辑) -->
+            <section id="view-history" class="view-section hidden animate-fade-in">
+                <div class="glass-card p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-bold text-primary font-mono tracking-widest uppercase text-white">Trade History</h2>
+                        <button id="batch-delete-btn" onclick="deleteSelectedTrades()" class="hidden bg-danger hover:bg-red-600 text-white text-[11px] px-4 py-1.5 rounded-lg font-bold shadow-lg transition-all animate-fade-in">
+                            批量删除选中 (<span id="selected-count">0</span>)
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-400">
+                            <thead class="border-b border-white/10 text-gray-500 uppercase text-[10px] font-bold">
+                                <tr>
+                                    <th class="py-3 px-4 w-10"><input type="checkbox" id="select-all-trades" onclick="toggleAllTrades(this.checked)" class="bulk-checkbox"></th>
+                                    <th class="py-3 px-4">Date / Time</th>
+                                    <th class="py-3 px-4">Symbol / Account</th>
+                                    <th class="py-3 px-4">Confluences</th>
+                                    <th class="py-3 px-4 text-right font-mono">PnL</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics View (全新排版，优化高度与黄金比例比例) -->
+            <section id="view-analytics" class="view-section hidden animate-fade-in flex flex-col space-y-6">
+                <!-- 头部标题 -->
+                <div class="mb-2 border-b border-white/10 pb-4">
+                    <h1 class="text-2xl font-black text-white tracking-widest uppercase">Performance Analytics</h1>
+                    <p class="text-xs text-gray-500 mt-1">全维度交易绩效与边缘优势剖析</p>
+                </div>
+
+                <!-- 第一排：雷达图与时段表现 (高度缩减，黄金分割 2:3) -->
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    <div class="glass-card p-6 flex flex-col h-[320px] lg:col-span-2">
+                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-primary rounded-full mr-3 shadow-[0_0_8px_#3b82f6]"></span>Trader DNA Radar</h2>
+                        <div class="relative w-full flex-1 min-h-0"><canvas id="radarChart"></canvas></div>
+                    </div>
+                    <div class="glass-card p-6 flex flex-col h-[320px] lg:col-span-3">
+                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-primary rounded-full mr-3 shadow-[0_0_8px_#3b82f6]"></span>Time Edge (时段表现)</h2>
+                        <div class="relative w-full flex-1 min-h-0"><canvas id="timeEdgeBarChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- 第二排：边缘优势三柱图 (三列布局，高度统一) -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+                    <div class="glass-card p-6 flex flex-col h-[320px]">
+                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Strategy PnL Race</h2>
+                        <div class="relative w-full flex-1 min-h-0"><canvas id="strategyBarChart"></canvas></div>
+                    </div>
+                    <div class="glass-card p-6 flex flex-col h-[320px]">
+                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Mood Edge (情绪期望)</h2>
+                        <div class="relative w-full flex-1 min-h-0"><canvas id="moodBarChart"></canvas></div>
+                    </div>
+                    <div class="glass-card p-6 flex flex-col h-[320px]">
+                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Context Edge (环境表现)</h2>
+                        <div class="relative w-full flex-1 min-h-0"><canvas id="contextEdgeBarChart"></canvas></div>
+                    </div>
+                    <div class="glass-card p-6 flex flex-col h-[320px]">
+                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Direction Edge (多空表现)</h2>
+                        <div class="relative w-full flex-1 min-h-0"><canvas id="directionBarChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- 跨维形态发现 -->
+                <div class="glass-card p-8 shadow-xl mt-2">
+                    <h2 class="text-lg font-bold text-white uppercase mb-8 tracking-widest text-center border-b border-white/10 pb-4">Global Pattern Discovery (跨维形态发现)</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div class="w-full">
+                            <h3 class="text-success font-bold mb-6 flex items-center text-lg"><span class="w-3 h-3 bg-success rounded-full mr-3 shadow-[0_0_12px_#10b981]"></span> The Holy Grail (最佳印钞形态)</h3>
+                            <div id="top-edges-container" class="space-y-4"></div>
+                        </div>
+                        <div class="w-full">
+                            <h3 class="text-danger font-bold mb-6 flex items-center text-lg"><span class="w-3 h-3 bg-danger rounded-full mr-3 shadow-[0_0_12px_#ef4444]"></span> The Account Bleeder (最强绞肉形态)</h3>
+                            <div id="top-leaks-container" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 策略多维深度剖析矩阵 -->
+                <div class="mt-8 pt-8 border-t border-white/10">
+                    <div class="flex justify-between items-end mb-8 pb-4">
+                        <div>
+                            <h2 class="text-xl font-black text-white tracking-widest uppercase">Strategy Drill-down</h2>
+                            <p class="text-xs text-gray-500 mt-1">单策略多维矩阵深度剖析</p>
+                        </div>
+                    </div>
+                    <div id="analytics-strategy-cards" class="space-y-10"></div>
+                </div>
+            </section>
+
+            <!-- Settings -->
+            <section id="view-settings" class="view-section hidden animate-fade-in">
+                <div class="glass-card p-6 flex flex-col space-y-10">
+                    <div>
+                        <h2 class="text-lg font-bold mb-4 text-primary tracking-widest uppercase border-b border-white/5 pb-2">Account Initial Balance (起始资金配置)</h2>
+                        <p class="text-xs text-gray-500 mb-4">设定每个账户的起始余额，资金曲线将从真实净值开始绘制。</p>
+                        <div id="initial-balance-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold mb-4 text-primary tracking-widest uppercase border-b border-white/5 pb-2">Risk Management (熔断与风控)</h2>
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                                <div class="flex-1">
+                                    <div class="font-bold text-white text-sm">单日允许最大连损笔数</div>
+                                    <div class="text-xs text-gray-500 mt-1">超过此阈值将触发系统强制熔断机制</div>
+                                </div>
+                                <input type="number" id="max-consecutive-losses" class="bg-black/50 border border-white/10 rounded-lg px-4 py-2 w-24 text-center font-mono outline-none focus:border-danger text-danger font-bold" value="3" onchange="updateConfig('maxConsecutiveLosses', this.value)">
+                            </div>
+                            <div class="flex items-center space-x-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                                <div class="flex-1">
+                                    <div class="font-bold text-white text-sm">强制冷却时间设置 (分钟)</div>
+                                    <div class="text-xs text-gray-500 mt-1">熔断后，在此时间范围内系统将拦截新开单请求</div>
+                                </div>
+                                <input type="number" id="halt-cooldown-minutes" class="bg-black/50 border border-white/10 rounded-lg px-4 py-2 w-24 text-center font-mono outline-none focus:border-danger text-danger font-bold" value="60" onchange="updateConfig('haltCooldownMinutes', this.value)">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pt-6 border-t border-white/5 flex flex-wrap gap-4">
+                        <button onclick="exportData()" class="bg-primary/10 text-primary border border-primary/30 px-6 py-2 rounded-lg hover:bg-primary/20 transition-all font-bold text-sm">导出备份 (JSON)</button>
+                        <button onclick="document.getElementById('import-file').click()" class="bg-warning/10 text-warning border border-warning/30 px-6 py-2 rounded-lg hover:bg-warning/20 transition-all font-bold text-sm">导入恢复</button>
+                        <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(this)">
+                        <button onclick="resetData()" class="bg-danger/10 text-danger border border-danger/30 px-6 py-2 rounded-lg hover:bg-danger/20 transition-all font-bold text-sm ml-auto">清除所有缓存数据</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 阶段一：进场录入 Modal -->
+    <div id="entry-modal" class="fixed inset-0 bg-black/80 hidden z-50 items-center justify-center p-4">
+        <div class="glass-card w-full max-w-4xl p-8 bg-panel border-t-4 border-t-primary shadow-2xl overflow-y-auto max-h-[95vh]">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-primary flex items-center">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg> 
+                    Trade Entry (阶段一：入场)
+                </h2>
+                <button type="button" onclick="closeEntryModal()" class="text-gray-400 hover:text-white text-xl">✕</button>
+            </div>
+            
+            <form id="entry-form" class="space-y-6" onsubmit="handleEntrySubmit(event)">
+                <input type="hidden" id="edit-trade-id">
+                
+                <!-- 基础信息：3列 x 2排 完美均分网格 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="relative space-y-1" id="account-container">
+                        <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Account (账号)</label>
+                        <div class="tag-input-container !border-primary/50 !bg-primary/5"><div id="selected-accounts" class="flex flex-wrap gap-1"></div><input type="text" id="account-input" class="bg-transparent border-none outline-none text-sm w-full" placeholder="..." required></div><div id="account-dropdown" class="dropdown-menu hidden"></div>
+                    </div>
+                    <div class="space-y-1"><label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Symbol</label><select id="symbol" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-primary" onchange="window.updateEntryCalc()"><option value="NQ">NQ ($5)</option><option value="ES">ES ($12.5)</option></select></div>
+                    <div class="space-y-1"><label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Direction</label><select id="direction" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-primary"><option value="Long">Long (做多)</option><option value="Short">Short (做空)</option></select></div>
+                    
+                    <div class="space-y-1"><label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Date</label><input type="date" id="trade-date" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-primary" required></div>
+                    <div class="space-y-1"><label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Entry Time</label><input type="time" id="entry-time" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-primary" required></div>
+                    <div class="space-y-1"><label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Session</label><select id="session" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-primary"><option value="Asia">Asia (亚洲)</option><option value="London">London (欧洲)</option><option value="NY">NY (纽约)</option></select></div>
+                </div>
+
+                <div class="p-4 bg-primary/5 rounded-xl border border-primary/20">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-sm text-primary font-bold">Execution Compliance (执行审计)</span>
+                        <div class="flex items-center space-x-2"><input type="text" id="new-rule-input" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewRule()}" placeholder="添加新规则..." class="bg-base border border-white/10 text-[10px] rounded px-3 py-1.5 outline-none w-48 focus:border-primary"><button type="button" onclick="addNewRule()" class="bg-primary text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-blue-600">+</button></div>
+                    </div>
+                    <div id="compliance-rules-grid" class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="relative space-y-1" id="context-container"><label class="text-[10px] uppercase font-bold text-gray-400 mb-1 block">Context (环境)</label><div class="tag-input-container"><div id="selected-contexts" class="flex flex-wrap gap-1"></div><input type="text" id="context-input" class="bg-transparent border-none outline-none text-sm w-full"></div><div id="context-dropdown" class="dropdown-menu hidden"></div></div>
+                    <div class="relative space-y-1" id="location-container"><label class="text-[10px] uppercase font-bold text-gray-400 mb-1 block">Location (位置)</label><div class="tag-input-container"><div id="selected-locations" class="flex flex-wrap gap-1"></div><input type="text" id="location-input" class="bg-transparent border-none outline-none text-sm w-full"></div><div id="location-dropdown" class="dropdown-menu hidden"></div></div>
+                    <div class="relative space-y-1" id="strategy-container"><label class="text-[10px] uppercase font-bold text-gray-400 mb-1 block">Strategy (策略)</label><div class="tag-input-container"><div id="selected-strategies" class="flex flex-wrap gap-1"></div><input type="text" id="strategy-input" class="bg-transparent border-none outline-none text-sm w-full"></div><div id="strategy-dropdown" class="dropdown-menu hidden"></div></div>
+                    <div class="relative space-y-1" id="signal-container"><label class="text-[10px] uppercase font-bold text-gray-400 mb-1 block">Signal (信号)</label><div class="tag-input-container"><div id="selected-signals" class="flex flex-wrap gap-1"></div><input type="text" id="signal-input" class="bg-transparent border-none outline-none text-sm w-full"></div><div id="signal-dropdown" class="dropdown-menu hidden"></div></div>
+                    <div class="relative space-y-1" id="entryMode-container"><label class="text-[10px] uppercase font-bold text-gray-400 mb-1 block">Entry Mode</label><div class="tag-input-container"><div id="selected-entryModes" class="flex flex-wrap gap-1"></div><input type="text" id="entryMode-input" class="bg-transparent border-none outline-none text-sm w-full"></div><div id="entryMode-dropdown" class="dropdown-menu hidden"></div></div>
+                    <div class="relative space-y-1" id="mood-container"><label class="text-[10px] uppercase font-bold text-gray-400 mb-1 block">Initial Mood</label><div class="tag-input-container"><div id="selected-moods" class="flex flex-wrap gap-1"></div><input type="text" id="mood-input" class="bg-transparent border-none outline-none text-sm w-full"></div><div id="mood-dropdown" class="dropdown-menu hidden"></div></div>
+                </div>
+
+                <div class="p-5 bg-base/50 rounded-lg border border-white/5 grid grid-cols-2 md:grid-cols-4 gap-6 shadow-inner">
+                    <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Risk (Ticks)</label><input type="number" id="risk-ticks" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono" value="20" required oninput="window.updateEntryCalc()"></div>
+                    <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Risk ($ USD)</label><input type="number" id="risk-usd" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono text-warning" placeholder="实际风险金额" required></div>
+                    <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Target (Ticks)</label><input type="number" id="target-ticks" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono" placeholder="可选" oninput="window.updateEntryCalc()"></div>
+                    <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Target ($ USD)</label><input type="number" id="target-usd" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono text-success" placeholder="可选"></div>
+                </div>
+
+                <div class="flex justify-end space-x-4 pt-6 border-t border-white/5">
+                    <button type="button" onclick="closeEntryModal()" class="px-6 py-2 text-gray-500 hover:text-white font-medium transition-colors">取消</button>
+                    <button type="submit" class="bg-primary hover:bg-blue-600 text-white px-12 py-2 rounded-lg font-bold shadow-lg transition-transform active:scale-95">入场开单 (Open Trade)</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 阶段二：出场结单 Modal -->
+    <div id="close-modal" class="fixed inset-0 bg-black/80 hidden z-50 items-center justify-center p-4">
+        <div class="glass-card w-full max-w-2xl p-8 bg-panel border-t-4 border-t-success shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-success flex items-center">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Close Trade (阶段二：结单)
+                </h2>
+                <button type="button" onclick="closeExitModal()" class="text-gray-400 hover:text-white text-xl">✕</button>
+            </div>
+            
+            <div id="close-info-header" class="mb-6 p-4 bg-white/5 rounded-xl text-xs text-gray-300 flex justify-between items-center border border-white/10"></div>
+            
+            <form id="close-form" class="space-y-6" onsubmit="handleExitSubmit(event)">
+                <input type="hidden" id="edit-exit-id">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Exit Time (离场时间)</label>
+                        <input type="time" id="exit-time" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success" required>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Final PnL (Ticks)</label>
+                        <input type="number" id="exit-ticks" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono" placeholder="+/-" required oninput="updateExitCalc()">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Final PnL ($ USD)</label>
+                        <input type="number" id="exit-usd" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold" placeholder="+/- $" required>
+                    </div>
+                </div>
+                
+                <div class="relative space-y-1" id="exitMood-container">
+                    <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Exit Mood (出场情绪)</label>
+                    <div class="tag-input-container !focus-within:border-success"><div id="selected-exitMoods" class="flex flex-wrap gap-1"></div><input type="text" id="exitMood-input" class="bg-transparent border-none outline-none text-sm w-full" placeholder="..."></div><div id="exitMood-dropdown" class="dropdown-menu hidden"></div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Trade Notes (复盘备注)</label>
+                    <textarea id="trade-notes" rows="3" class="w-full bg-base border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-success" placeholder="这笔交易做对了什么？做错了什么？"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-4 pt-6 border-t border-white/5">
+                    <button type="button" onclick="closeExitModal()" class="px-6 py-2 text-gray-500 hover:text-white font-medium transition-colors">稍后结单</button>
+                    <button type="submit" class="bg-success hover:bg-emerald-600 text-black px-12 py-2 rounded-lg font-bold shadow-lg transition-transform active:scale-95">确认离场</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 熔断冷却弹窗 -->
+    <div id="halt-modal" class="halt-overlay">
+        <div id="halt-content" class="text-center p-8 max-w-2xl transition-all duration-300">
+            <div class="text-6xl mb-6">🚫</div>
+            <h1 class="text-5xl font-black text-white mb-4 uppercase tracking-tighter shadow-black drop-shadow-lg">TRADING HALT</h1>
+            <p class="text-red-200 text-xl mb-8 leading-relaxed">系统检测到您已连续触发最大连损额度！<br>请立即停止操作。<br><span class="font-bold text-white">立刻离开屏幕，复仇交易只会摧毁你的账户！</span></p>
+            <div id="halt-timer" class="text-4xl font-mono font-bold text-white bg-black/50 px-8 py-4 rounded-full mb-8 inline-block border border-red-500/50">60:00</div>
+            <div>
+                <button onclick="dismissHalt()" id="halt-close-btn" class="hidden bg-white text-danger px-8 py-3 rounded-xl font-black shadow-2xl hover:scale-105 active:scale-95 transition-all uppercase">我已冷静，承认错误</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialogs -->
+    <div id="day-detail-modal" class="fixed inset-0 bg-black/80 hidden z-[80] items-center justify-center p-4"><div class="glass-card w-full max-w-xl p-6 relative"><button onclick="closeDayModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button><h2 id="day-modal-title" class="text-xl font-bold mb-4 text-white"></h2><div id="day-modal-content" class="space-y-3 overflow-y-auto max-h-[60vh] pr-2"></div></div></div>
+    <div id="custom-dialog" class="fixed inset-0 bg-black/90 hidden z-[200] items-center justify-center p-4"><div class="glass-card w-full max-w-xs p-6"><h3 id="dialog-title" class="text-white font-bold mb-2"></h3><p id="dialog-message" class="text-xs text-gray-400 mb-4"></p><input type="text" id="dialog-input" class="w-full bg-black border border-white/10 rounded p-2 text-sm mb-4 hidden text-white outline-none focus:border-primary"><div class="flex justify-end space-x-3 mt-4"><button id="dialog-cancel" class="text-sm px-3 text-gray-400 hover:text-white transition-colors">取消</button><button id="dialog-confirm" class="text-sm px-4 bg-primary text-white rounded font-bold shadow-lg">确定</button></div></div></div>
+
+    <!-- 所有的 JavaScript 逻辑 -->
+    <script>
+        const UNITS = { NQ: 5, ES: 12.5 };
+        const STORAGE_KEY = 'trade_arch_pro_v45_sameday';
+        const CONFIG_KEY = 'trade_arch_config_v45';
+        const TAG_POOL_KEY = 'trade_arch_tags_v45';
+        const typeToPlural = { 'account': 'accounts', 'context': 'contexts', 'location': 'locations', 'strategy': 'strategies', 'signal': 'signals', 'entryMode': 'entryModes', 'mood': 'moods', 'exitMood': 'exitMoods' };
+
+        let currentUnit = 'tick';
+        let calCurrentDate = new Date(); 
+        let currentForm = { accounts: [], signals: [], strategies: [], moods: [], exitMoods: [], locations: [], contexts: [], entryModes: [], compliance: {} };
+        
+        // --- 初始化包含冷却时间的新配置 ---
+        let config = JSON.parse(localStorage.getItem(CONFIG_KEY)) || { initialBalances: {}, maxConsecutiveLosses: 3, haltCooldownMinutes: 60 };
+        
+        let globalCharts = { radar: null, strategyBar: null, moodBar: null, timeEdge: null, contextEdge: null, directionBar: null, dailyPnl: null, equity: null, dynamicCharts: [] };
+
+        // 50 条海量数据植入 (日期已全盘平移至今天之前)
+        const defaultDummyTrades = [
+            { id: 1, symbol: "NQ", date: "2026-04-04", session: "NY", riskTicks: 20, targetTicks: 60, actualTicks: 55, accounts: ["Apex Eval 50K"], signals: ["TrendLine", "VWAP"], strategies: ["Breakout"], moods: ["Confident"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 2, symbol: "NQ", date: "2026-04-05", session: "NY", riskTicks: 20, targetTicks: 50, actualTicks: 45, accounts: ["Apex Eval 50K"], signals: ["TrendLine", "VWAP"], strategies: ["Breakout"], moods: ["Confident"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 3, symbol: "ES", date: "2026-04-11", session: "NY", riskTicks: 15, targetTicks: 40, actualTicks: 35, accounts: ["Topstep Funded"], signals: ["TrendLine", "VWAP"], strategies: ["Breakout"], moods: ["Patient"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 4, symbol: "NQ", date: "2026-04-12", session: "NY", riskTicks: 20, targetTicks: 60, actualTicks: 60, accounts: ["Apex Eval 50K"], signals: ["TrendLine", "VWAP"], strategies: ["Breakout"], moods: ["Confident"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 5, symbol: "NQ", date: "2026-04-18", session: "NY", riskTicks: 20, targetTicks: 50, actualTicks: 50, accounts: ["Apex Eval 50K"], signals: ["TrendLine", "VWAP"], strategies: ["Breakout"], moods: ["Confident"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 6, symbol: "ES", date: "2026-04-19", session: "NY", riskTicks: 15, targetTicks: 45, actualTicks: 40, accounts: ["Topstep Funded"], signals: ["TrendLine", "VWAP"], strategies: ["Breakout"], moods: ["Confident"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 7, symbol: "NQ", date: "2026-04-06", session: "London", riskTicks: 15, targetTicks: 30, actualTicks: 30, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["VAL"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 8, symbol: "ES", date: "2026-04-07", session: "London", riskTicks: 10, targetTicks: 25, actualTicks: 25, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["VAH"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 9, symbol: "NQ", date: "2026-04-13", session: "London", riskTicks: 15, targetTicks: 40, actualTicks: 35, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["VAL"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 10, symbol: "ES", date: "2026-04-14", session: "London", riskTicks: 10, targetTicks: 20, actualTicks: 20, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["VAH"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 11, symbol: "NQ", date: "2026-04-20", session: "London", riskTicks: 15, targetTicks: 40, actualTicks: 40, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["VAL"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 12, symbol: "NQ", date: "2026-04-01", session: "Asia", riskTicks: 20, targetTicks: 40, actualTicks: -30, accounts: ["Apex Eval 50K"], signals: ["吸收"], strategies: ["MeanReversion"], moods: ["FOMO"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": true, "不超仓执行": false} },
+            { id: 13, symbol: "NQ", date: "2026-04-08", session: "Asia", riskTicks: 20, targetTicks: 40, actualTicks: -35, accounts: ["Apex Eval 50K"], signals: ["吸收"], strategies: ["MeanReversion"], moods: ["Fear"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": false, "不超仓执行": false} },
+            { id: 14, symbol: "ES", date: "2026-04-15", session: "Asia", riskTicks: 15, targetTicks: 30, actualTicks: -25, accounts: ["Topstep Funded"], signals: ["吸收"], strategies: ["MeanReversion"], moods: ["FOMO"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": true, "不超仓执行": false} },
+            { id: 15, symbol: "NQ", date: "2026-04-22", session: "Asia", riskTicks: 20, targetTicks: 40, actualTicks: -40, accounts: ["Apex Eval 50K"], signals: ["吸收"], strategies: ["MeanReversion"], moods: ["FOMO"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": true, "不超仓执行": false} },
+            { id: 16, symbol: "ES", date: "2026-04-29", session: "Asia", riskTicks: 15, targetTicks: 30, actualTicks: -20, accounts: ["Topstep Funded"], signals: ["吸收"], strategies: ["MeanReversion"], moods: ["Fear"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": false, "不超仓执行": false} },
+            { id: 17, symbol: "NQ", date: "2026-04-01", session: "NY", riskTicks: 20, targetTicks: 60, actualTicks: -45, accounts: ["Apex Eval 50K"], signals: ["VWAP"], strategies: ["Breakout"], moods: ["FOMO"], contexts: ["Downtrend"], locations: ["VWAP"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 18, symbol: "ES", date: "2026-04-08", session: "NY", riskTicks: 15, targetTicks: 40, actualTicks: -30, accounts: ["Topstep Funded"], signals: ["VWAP"], strategies: ["Breakout"], moods: ["FOMO"], contexts: ["Downtrend"], locations: ["VWAP"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": false, "不超仓执行": false} },
+            { id: 19, symbol: "NQ", date: "2026-04-15", session: "NY", riskTicks: 20, targetTicks: 60, actualTicks: -50, accounts: ["Apex Eval 50K"], signals: ["VWAP"], strategies: ["Breakout"], moods: ["Fear"], contexts: ["Downtrend"], locations: ["VWAP"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 20, symbol: "ES", date: "2026-04-22", session: "NY", riskTicks: 15, targetTicks: 40, actualTicks: -35, accounts: ["Topstep Funded"], signals: ["VWAP"], strategies: ["Breakout"], moods: ["FOMO"], contexts: ["Downtrend"], locations: ["VWAP"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": true, "不超仓执行": false} },
+            { id: 21, symbol: "NQ", date: "2026-04-29", session: "NY", riskTicks: 20, targetTicks: 60, actualTicks: -40, accounts: ["Apex Eval 50K"], signals: ["VWAP"], strategies: ["Breakout"], moods: ["FOMO"], contexts: ["Downtrend"], locations: ["VWAP"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": false, "不超仓执行": false} },
+            { id: 22, symbol: "NQ", date: "2026-04-02", session: "NY", riskTicks: 20, targetTicks: 40, actualTicks: 25, accounts: ["Apex Eval 50K"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["Patient"], contexts: ["High Volatility"], locations: ["VAH"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 23, symbol: "ES", date: "2026-04-03", session: "London", riskTicks: 10, targetTicks: 20, actualTicks: -10, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Confident"], contexts: ["Ranging"], locations: ["VAL"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 24, symbol: "NQ", date: "2026-04-06", session: "Asia", riskTicks: 15, targetTicks: 30, actualTicks: 15, accounts: ["Apex Eval 50K"], signals: ["VWAP"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 25, symbol: "NQ", date: "2026-04-07", session: "NY", riskTicks: 20, targetTicks: 50, actualTicks: -25, accounts: ["Apex Eval 50K"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["FOMO"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": true, "不超仓执行": false} },
+            { id: 26, symbol: "ES", date: "2026-04-09", session: "London", riskTicks: 12, targetTicks: 25, actualTicks: 25, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["VAH"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 27, symbol: "NQ", date: "2026-04-10", session: "NY", riskTicks: 20, targetTicks: 40, actualTicks: 40, accounts: ["Apex Eval 50K"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["Confident"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 28, symbol: "NQ", date: "2026-04-11", session: "Asia", riskTicks: 20, targetTicks: 40, actualTicks: -20, accounts: ["Apex Eval 50K"], signals: ["吸收"], strategies: ["MeanReversion"], moods: ["Fear"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Market"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": false} },
+            { id: 29, symbol: "ES", date: "2026-04-12", session: "London", riskTicks: 10, targetTicks: 20, actualTicks: 15, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Confident"], contexts: ["Ranging"], locations: ["VAL"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 30, symbol: "NQ", date: "2026-04-13", session: "NY", riskTicks: 20, targetTicks: 40, actualTicks: -20, accounts: ["Apex Eval 50K"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["FOMO"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 31, symbol: "NQ", date: "2026-04-14", session: "NY", riskTicks: 20, targetTicks: 50, actualTicks: 30, accounts: ["Apex Eval 50K"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["Patient"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 32, symbol: "ES", date: "2026-04-15", session: "London", riskTicks: 12, targetTicks: 24, actualTicks: -12, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Confident"], contexts: ["Ranging"], locations: ["VAH"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 33, symbol: "NQ", date: "2026-04-16", session: "Asia", riskTicks: 15, targetTicks: 30, actualTicks: 10, accounts: ["Apex Eval 50K"], signals: ["VWAP"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 34, symbol: "NQ", date: "2026-04-17", session: "NY", riskTicks: 20, targetTicks: 40, actualTicks: 40, accounts: ["Apex Eval 50K"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["Confident"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 35, symbol: "ES", date: "2026-04-18", session: "London", riskTicks: 10, targetTicks: 20, actualTicks: 20, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["VAL"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 36, symbol: "NQ", date: "2026-04-19", session: "NY", riskTicks: 20, targetTicks: 50, actualTicks: -25, accounts: ["Apex Eval 50K"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["FOMO"], contexts: ["High Volatility"], locations: ["VAH"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": false, "不超仓执行": false} },
+            { id: 37, symbol: "NQ", date: "2026-04-20", session: "Asia", riskTicks: 20, targetTicks: 40, actualTicks: -20, accounts: ["Apex Eval 50K"], signals: ["吸收"], strategies: ["MeanReversion"], moods: ["Fear"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Market"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": false} },
+            { id: 38, symbol: "ES", date: "2026-04-21", session: "NY", riskTicks: 15, targetTicks: 30, actualTicks: 30, accounts: ["Topstep Funded"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["Confident"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 39, symbol: "NQ", date: "2026-04-22", session: "London", riskTicks: 15, targetTicks: 30, actualTicks: -15, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Confident"], contexts: ["Ranging"], locations: ["VAH"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 40, symbol: "NQ", date: "2026-04-23", session: "NY", riskTicks: 20, targetTicks: 40, actualTicks: 25, accounts: ["Apex Eval 50K"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["Patient"], contexts: ["High Volatility"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 41, symbol: "ES", date: "2026-04-24", session: "Asia", riskTicks: 12, targetTicks: 24, actualTicks: 12, accounts: ["Topstep Funded"], signals: ["VWAP"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 42, symbol: "NQ", date: "2026-04-25", session: "NY", riskTicks: 20, targetTicks: 50, actualTicks: 45, accounts: ["Apex Eval 50K"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["Confident"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 43, symbol: "NQ", date: "2026-04-26", session: "London", riskTicks: 15, targetTicks: 30, actualTicks: 30, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["VAL"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 44, symbol: "ES", date: "2026-04-27", session: "NY", riskTicks: 15, targetTicks: 30, actualTicks: -15, accounts: ["Topstep Funded"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["FOMO"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": true, "不超仓执行": false} },
+            { id: 45, symbol: "NQ", date: "2026-04-28", session: "Asia", riskTicks: 20, targetTicks: 40, actualTicks: -20, accounts: ["Apex Eval 50K"], signals: ["吸收"], strategies: ["MeanReversion"], moods: ["Fear"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Market"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": false} },
+            { id: 46, symbol: "NQ", date: "2026-04-29", session: "NY", riskTicks: 20, targetTicks: 50, actualTicks: 35, accounts: ["Apex Eval 50K"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["Confident"], contexts: ["High Volatility"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 47, symbol: "ES", date: "2026-04-30", session: "London", riskTicks: 10, targetTicks: 20, actualTicks: 20, accounts: ["Topstep Funded"], signals: ["V-Profile"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["VAH"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 48, symbol: "NQ", date: "2026-05-01", session: "NY", riskTicks: 20, targetTicks: 40, actualTicks: 40, accounts: ["Apex Eval 50K"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["Confident"], contexts: ["Uptrend"], locations: ["VAH"], entryModes: ["Stop"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 49, symbol: "ES", date: "2026-05-02", session: "NY", riskTicks: 15, targetTicks: 30, actualTicks: -15, accounts: ["Topstep Funded"], signals: ["TrendLine"], strategies: ["Breakout"], moods: ["FOMO"], contexts: ["Downtrend"], locations: ["VWAP"], entryModes: ["Market"], compliance: {"遵循进场原则": false, "设定并坚守止损": true, "不超仓执行": true} },
+            { id: 50, symbol: "NQ", date: "2026-05-03", session: "Asia", riskTicks: 15, targetTicks: 30, actualTicks: 15, accounts: ["Apex Eval 50K"], signals: ["VWAP"], strategies: ["MeanReversion"], moods: ["Patient"], contexts: ["Ranging"], locations: ["POC"], entryModes: ["Limit"], compliance: {"遵循进场原则": true, "设定并坚守止损": true, "不超仓执行": true} }
+        ];
+
+        let trades = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!trades) trades = defaultDummyTrades;
+        // 确保新数据结构兼容 (自动附加状态、时间以及新引入的多空方向字段)
+        trades = trades.map(t => ({ ...t, status: t.status || 'closed', entryTime: t.entryTime || '09:30', exitTime: t.exitTime || (t.status === 'open' ? '' : '10:00'), direction: t.direction || (t.id % 2 === 0 ? 'Long' : 'Short') }));
+
+        let tagPool = JSON.parse(localStorage.getItem(TAG_POOL_KEY)) || {
+            accounts: ['Apex Eval 50K', 'Topstep Funded'], strategies: ['Breakout', 'MeanReversion'],
+            moods: ['Confident', 'FOMO', 'Patient', 'Fear'], exitMoods: ['Happy', 'Frustrated', 'Relieved', 'Greedy'], signals: ['TrendLine', 'V-Profile', '吸收', 'VWAP'],
+            locations: ['VAL', 'VAH', 'POC', 'VWAP'], contexts: ['Downtrend', 'Uptrend', 'Ranging', 'High Volatility'],
+            entryModes: ['Market', 'Limit', 'Stop'], complianceRules: ['遵循进场原则', '设定并坚守止损', '不超仓执行']
+        };
+
+        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.font.family = '"Courier New", Courier, monospace';
+
+        window.getActiveTrade = () => trades.find(t => t.status === 'open');
+
+        // ==========================================
+        // UI 图表生成器
+        // ==========================================
+        function createSemiCircleGauge(percentage) {
+            const r = 40, circ = Math.PI * r, off = circ - (Math.min(Math.abs(percentage), 100) / 100) * circ;
+            return `<svg viewBox="0 0 100 50" class="w-full h-full overflow-visible"><path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#ef4444" stroke-width="12" stroke-linecap="butt"/><path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#10b981" stroke-width="12" stroke-linecap="butt" stroke-dasharray="${circ}" stroke-dashoffset="${off}" class="transition-all duration-1000 ease-out"/></svg>`;
+        }
+        function createDonutChart(percentage, color) {
+            const r = 24, circ = 2 * Math.PI * r, off = circ - (Math.min(Math.abs(percentage), 100) / 100) * circ;
+            return `<svg viewBox="0 0 60 60" class="w-full h-full transform -rotate-90 overflow-visible"><circle cx="30" cy="30" r="24" fill="none" stroke="#ef4444" stroke-width="8"/><circle cx="30" cy="30" r="24" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${off}" class="transition-all duration-1000 ease-out"/></svg>`;
+        }
+        function createTextDonut(percentage, color, textValue) {
+            const r = 18, circ = 2 * Math.PI * r, absP = Math.min(Math.abs(percentage), 100), off = circ - (absP / 100) * circ;
+            return `<div class="relative w-10 h-10 flex items-center justify-center shrink-0"><svg viewBox="0 0 44 44" class="absolute inset-0 w-full h-full transform -rotate-90"><circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${off}" class="transition-all duration-1000 ease-out"/></svg><span class="text-[9px] font-mono font-bold" style="color: ${color}">${textValue}</span></div>`;
+        }
+
+        // ==========================================
+        // 核心数据处理引擎
+        // ==========================================
+        window.getPnL = function(t, unit) {
+            if (unit === 'usd') return t.actualUsd !== undefined ? t.actualUsd : (t.actualTicks * (UNITS[t.symbol] || 1));
+            return t.actualTicks || 0;
+        };
+
+        window.getRisk = function(t, unit) {
+            if (unit === 'usd') return (t.riskUsd !== undefined && t.riskUsd > 0) ? t.riskUsd : ((t.riskTicks || 1) * (UNITS[t.symbol] || 1));
+            return t.riskTicks || 1;
+        };
+
+        window.calcStats = function(list) {
+            const closedTrades = list.filter(t => t.status === 'closed');
+            let wins = 0, losses = 0, pnl = 0, gProf = 0, gLoss = 0, totalR = 0, aaa = 0;
+            const totalRules = tagPool.complianceRules.length;
+            
+            let sumPnL = 0;
+            closedTrades.forEach(t => sumPnL += window.getPnL(t, currentUnit));
+            const mean = closedTrades.length ? sumPnL / closedTrades.length : 0;
+            let sumSq = 0;
+
+            closedTrades.forEach(t => {
+                const v = window.getPnL(t, currentUnit);
+                const r = window.getRisk(t, currentUnit);
+                
+                pnl += v;
+                sumSq += Math.pow(v - mean, 2);
+                
+                if (v > 0) { wins++; gProf += v; totalR += (v / r); } 
+                else if (v < 0) { losses++; gLoss += Math.abs(v); }
+
+                if (totalRules > 0) {
+                    const isPerfect = tagPool.complianceRules.every(rule => t.compliance && t.compliance[rule] === true);
+                    if (isPerfect) aaa++;
+                }
+            });
+
+            const stdDev = closedTrades.length ? Math.sqrt(sumSq / closedTrades.length) : 0;
+            const sharpe = stdDev === 0 ? (mean > 0 ? '99.9' : (mean < 0 ? '-99.9' : '0')) : (mean / stdDev).toFixed(2);
+            const total = wins + losses;
+            const wr = total ? Math.round((wins / total) * 100) : 0;
+            const pf = gLoss ? (gProf / gLoss).toFixed(2) : (gProf ? '99.9' : '0');
+            const impact = total ? Math.round(((wins - losses) / total) * 100) : 0;
+            const avgWin = wins ? (gProf / wins).toFixed(2) : 0;
+            const avgLoss = losses ? (gLoss / losses).toFixed(2) : 0;
+            const avgRR = wins ? (totalR / wins).toFixed(2) : 0;
+            
+            return { count: total, winRate: wr, pf, pnl, impact, ev: total ? (pnl/total).toFixed(1) : 0, gProf, gLoss, wins, losses, avgWin, avgLoss, avgRR, aaa, sharpe };
+        };
+
+        window.checkDiscipline = function(newTrade) {
+            const maxLosses = config.maxConsecutiveLosses || 3;
+            // 获取冷却时间，如果没设置默认为60分钟
+            const cooldownMin = config.haltCooldownMinutes || 60;
+
+            const entryTimeSafe = newTrade.entryTime || '00:00';
+            const newTradeTime = new Date(`${newTrade.date}T${entryTimeSafe}:00`).getTime();
+            
+            const sameDayClosed = trades.filter(t => {
+                if (t.status !== 'closed') return false;
+                if (t.date !== newTrade.date) return false;
+                const tExitTime = new Date(`${t.date}T${t.exitTime || '00:00'}:00`).getTime();
+                return tExitTime <= newTradeTime; 
+            }).sort((a,b) => {
+                const timeA = new Date(`${a.date}T${a.exitTime || '00:00'}:00`).getTime();
+                const timeB = new Date(`${b.date}T${b.exitTime || '00:00'}:00`).getTime();
+                return timeA - timeB;
+            });
+
+            if (!sameDayClosed.length) return false;
+
+            let consecutiveLosses = 0;
+            for (let i = sameDayClosed.length - 1; i >= 0; i--) {
+                if (sameDayClosed[i].actualTicks < 0) consecutiveLosses++; 
+                else break; 
+            }
+
+            if (consecutiveLosses >= maxLosses) {
+                const lastTrade = sameDayClosed[sameDayClosed.length - 1];
+                const lastExit = new Date(`${lastTrade.date}T${lastTrade.exitTime || '00:00'}:00`).getTime();
+                const diffMin = (newTradeTime - lastExit) / (1000 * 60);
+
+                // 使用配置的冷却时间
+                if (diffMin < cooldownMin && diffMin >= 0) {
+                    tagPool.complianceRules.forEach(r => newTrade.compliance[r] = false);
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        window.checkImmediateHalt = function(dateStr) {
+            const maxLosses = config.maxConsecutiveLosses || 3;
+            const sameDayClosed = trades.filter(t => t.status === 'closed' && t.date === dateStr)
+                .sort((a,b) => new Date(`${a.date}T${a.exitTime || '00:00'}:00`).getTime() - new Date(`${b.date}T${b.exitTime || '00:00'}:00`).getTime());
+            
+            if (!sameDayClosed.length) return false;
+
+            let consecutiveLosses = 0;
+            for (let i = sameDayClosed.length - 1; i >= 0; i--) {
+                if (sameDayClosed[i].actualTicks < 0) consecutiveLosses++;
+                else break;
+            }
+            return consecutiveLosses >= maxLosses;
+        };
+
+        window.updateButtonState = function() {
+            const active = window.getActiveTrade();
+            const btn = document.getElementById('main-logger-btn');
+            if (active) {
+                btn.className = "bg-success hover:bg-emerald-600 text-black px-5 py-2 rounded-lg font-bold shadow-lg flex items-center transition-all hover:scale-105 active:scale-95 animate-pulse";
+                btn.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span>✓ Close Trade</span>`;
+            } else {
+                btn.className = "bg-primary hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-bold shadow-lg flex items-center transition-all hover:scale-105 active:scale-95";
+                btn.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg><span>+ Trade Logger</span>`;
+            }
+        };
+
+        window.toggleMainModal = function() {
+            const active = window.getActiveTrade();
+            if (active) window.openExitModal(active); else window.openEntryModal();
+        };
+
+        window.getFilteredTrades = function() {
+            const acc = document.getElementById('global-account-filter').value;
+            return acc === 'ALL' ? trades : trades.filter(t => (t.accounts||[]).includes(acc));
+        };
+
+        window.refreshDashboard = function() {
+            currentUnit = document.getElementById('unit-filter').value;
+            const active = window.getFilteredTrades();
+            
+            const m = window.calcStats(active); 
+            let series = [0], currentPnL = 0, maxDdAbsolute = 0;
+            const dailyPnLMap = {}; let maxDayPnL = 0, winDays = 0, lossDays = 0;
+            
+            const filterAcc = document.getElementById('global-account-filter').value;
+            const accountInitial = filterAcc === 'ALL' 
+                ? Object.values(config.initialBalances).reduce((a,b)=>a+Number(b||0), 0) 
+                : (Number(config.initialBalances[filterAcc]) || 0);
+
+            let currentBalance = accountInitial;
+            const tradeLabels = ['Start']; 
+            series = [currentBalance];
+
+            const sortedClosed = active.filter(t => t.status === 'closed').sort((a,b)=>new Date(a.date+'T'+(a.exitTime||'00:00'))-new Date(b.date+'T'+(b.exitTime||'00:00')));
+            
+            sortedClosed.forEach(t => {
+                const pnlVal = window.getPnL(t, currentUnit);
+                currentBalance += pnlVal; 
+                series.push(currentBalance);
+                
+                const parts = t.date.split('-');
+                tradeLabels.push((parts.length === 3 ? `${parts[1]}/${parts[2]}` : t.date) + (t.exitTime ? ` ${t.exitTime}` : ''));
+                
+                if (!dailyPnLMap[t.date]) dailyPnLMap[t.date] = 0; 
+                dailyPnLMap[t.date] += pnlVal;
+                
+                let peak = Math.max(...series);
+                if (peak - currentBalance > maxDdAbsolute) maxDdAbsolute = peak - currentBalance;
+            });
+
+            const unitSym = currentUnit === 'usd' ? '$' : 't';
+            const colorSharpe = m.sharpe >= 1 ? 'text-success' : (m.sharpe > 0 ? 'text-warning' : 'text-danger');
+            const colorWR = m.winRate >= 50 ? '#10b981' : '#ef4444';
+            const colorPF = m.pf >= 1.5 ? '#10b981' : (m.pf >= 1 ? '#f59e0b' : '#ef4444');
+            const pnlColor = m.pnl >= 0 ? 'text-success' : 'text-danger';
+            const avgWinRatio = (Number(m.avgWin) / ((Number(m.avgWin) + Number(m.avgLoss)) || 1)) * 100;
+            
+            // 精确计算胜率与保本单数量
+            const breakEvens = m.count - m.wins - m.losses;
+            const exactWR = m.count ? ((m.wins / m.count) * 100).toFixed(2) : "0.00";
+
+            const cMap = { 'Perfect (A)': [], 'Partial (B)': [], 'Violated (C)': [] };
+            sortedClosed.forEach(t => { 
+                const p = Object.values(t.compliance||{}).filter(v => v === true).length; 
+                const r = tagPool.complianceRules.length ? p / tagPool.complianceRules.length : 1; 
+                if(r === 1) cMap['Perfect (A)'].push(t); 
+                else if(r >= 0.6) cMap['Partial (B)'].push(t); 
+                else cMap['Violated (C)'].push(t); 
+            });
+            const cArr = Object.keys(cMap).map(k => ({ name: k, ...window.calcStats(cMap[k]) }));
+            let compHtml = `<div class="mt-4 space-y-3 w-full">`;
+            cArr.forEach(c => {
+                const color = c.pnl >= 0 ? 'bg-success' : 'bg-danger';
+                const textColor = c.pnl >= 0 ? 'text-success' : 'text-danger';
+                const maxAbs = Math.max(...cArr.map(x => Math.abs(x.pnl))) || 1;
+                const width = Math.max(2, (Math.abs(c.pnl) / maxAbs) * 100);
+                compHtml += `<div class="flex flex-col"><div class="flex justify-between items-end text-[10px] mb-1"><span class="text-gray-400 font-bold">${c.name}</span><span class="font-mono font-bold ${textColor}">${c.pnl > 0 ? '+' : ''}${c.pnl.toFixed(0)}</span></div><div class="w-full bg-white/5 rounded-full h-1.5 overflow-hidden"><div class="${color} h-full rounded-full transition-all" style="width: ${width}%"></div></div></div>`;
+            });
+            compHtml += `</div>`;
+
+            document.getElementById('dashboard-cards').innerHTML = `
+                <div class="glass-card p-5 flex flex-col justify-between group relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2 z-10">Total PnL</div><div class="text-4xl font-black font-mono ${pnlColor} z-10">${m.pnl >= 0 ? '+' : ''}${m.pnl.toFixed(2)}<span class="text-sm opacity-50 ml-1">${unitSym}</span></div><div class="text-[10px] text-gray-400 mt-3 flex justify-between z-10 pt-2 border-t border-white/5"><span>Max DD: <span class="text-danger">-${maxDdAbsolute.toFixed(0)}${unitSym}</span></span><span>Exp: <span class="${m.ev >= 0 ? 'text-success' : 'text-danger'}">${m.ev >= 0 ? '+' : ''}${m.ev}${unitSym}</span></span></div></div>
+                <div class="glass-card p-5 flex justify-between items-center relative group"><div class="flex-1 z-10"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Sharpe Ratio</div><div class="text-3xl font-black font-mono ${colorSharpe}">${m.sharpe}</div><div class="text-[10px] text-gray-400 mt-2">Return/Risk</div></div><div class="relative w-16 h-16 flex-shrink-0 flex items-center justify-center z-10 bg-white/5 rounded-full border border-white/10 shadow-inner"><svg class="w-8 h-8 ${colorSharpe}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg></div></div>
+                <div class="glass-card p-5 flex flex-col justify-center group"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Compliance Impact</div>${compHtml}</div>
+                <div class="glass-card p-5 border-white/5 flex justify-between items-center relative group"><div class="flex-1 z-10 flex flex-col justify-center h-full"><div class="flex items-center text-sm text-gray-300 font-bold tracking-wider mb-1">Trade win %<svg class="w-3.5 h-3.5 ml-1.5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div class="text-4xl font-black font-mono text-white mt-1">${exactWR}%</div></div><div class="flex flex-col items-center justify-center z-10 w-28 shrink-0"><div class="relative w-full h-12">${createSemiCircleGauge(m.count ? (m.wins / m.count) * 100 : 0)}</div><div class="flex justify-center space-x-1.5 mt-3"><span class="bg-[#0f2e1b] text-success px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold">${m.wins}</span><span class="bg-[#1e1e2d] text-indigo-400 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold">${breakEvens}</span><span class="bg-[#3b1216] text-danger px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold">${m.losses}</span></div></div></div>
+                <div class="glass-card p-5 border-white/5 flex justify-between items-center relative group"><div class="flex-1 z-10"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Profit Factor</div><div class="text-3xl font-black font-mono text-white">${m.pf}</div><div class="text-[10px] text-gray-400 mt-2">Gross PnL Ratio</div></div><div class="relative w-[72px] h-[72px] flex-shrink-0 flex items-center justify-center z-10 mr-4">${createDonutChart((parseFloat(m.pf)/3)*100, colorPF)}</div></div>
+                <div class="glass-card p-5 border-white/5 flex flex-col justify-between group"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-3">Avg Win / Avg Loss</div><div class="flex w-full h-2 rounded-full overflow-hidden bg-black/50 mb-3 shadow-inner"><div class="bg-success" style="width: ${avgWinRatio}%"></div><div class="bg-danger flex-1"></div></div><div class="flex items-end justify-between mt-auto pt-2 border-t border-white/5"><div><div class="text-2xl font-black font-mono text-white leading-none">${m.avgRR}</div><div class="text-[9px] text-gray-500 font-bold uppercase mt-1 tracking-wider">Avg R:R</div></div><div class="text-right"><div class="text-success font-mono text-sm font-bold">+${currentUnit==='usd'?'$':''}${m.avgWin}</div><div class="text-danger font-mono text-sm font-bold">-${currentUnit==='usd'?'$':''}${m.avgLoss}</div></div></div></div>
+            `;
+            
+            if (globalCharts.equity) globalCharts.equity.destroy();
+            const canvas = document.getElementById('balanceLineChart');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                const grad = ctx.createLinearGradient(0, 0, 0, canvas.parentElement.clientHeight);
+                grad.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                globalCharts.equity = new Chart(ctx, { type: 'line', data: { labels: tradeLabels, datasets: [{ data: series, borderColor: '#3b82f6', backgroundColor: grad, borderWidth: 2, fill: true, pointRadius: 0, pointHoverRadius: 4, tension: 0.1 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 9 }, maxTicksLimit: 5 } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', callback: v => (currentUnit==='usd'?'$':'')+v+(currentUnit==='tick'?'t':'') } } }, interaction: { mode: 'index', intersect: false } } });
+            }
+            
+            window.drawDailyPnlChart(dailyPnLMap);
+            window.renderCalendar(); 
+            window.updateButtonState();
+            window.renderSettings();
+            
+            const analyticsSection = document.getElementById('view-analytics');
+            if (analyticsSection && !analyticsSection.classList.contains('hidden')) window.renderAnalytics(); 
+            window.renderHistory();
+        };
+
+        window.drawDailyPnlChart = function(dailyPnLMap) {
+            const canvas = document.getElementById('dailyPnlBarChart');
+            if (!canvas) return;
+            const dates = Object.keys(dailyPnLMap).sort((a,b) => new Date(a) - new Date(b));
+            const data = dates.map(d => dailyPnLMap[d]);
+            const colors = data.map(v => v >= 0 ? '#10b981' : '#ef4444');
+            const labels = dates.map(d => { const p = d.split('-'); return p.length===3 ? `${p[1]}/${p[2]}` : d; });
+
+            if (globalCharts.dailyPnl) globalCharts.dailyPnl.destroy();
+            globalCharts.dailyPnl = new Chart(canvas.getContext('2d'), { type: 'bar', data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 2 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 9 } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', callback: v => (currentUnit==='usd'?'$':'')+v+(currentUnit==='tick'?'t':'') } } } } });
+        };
+
+        window.renderCalendar = function() {
+            const active = window.getFilteredTrades(), grid = document.getElementById('calendar-grid'), header = document.getElementById('calendar-header');
+            if (!grid || !header) return;
+            const y = calCurrentDate.getFullYear(), m = calCurrentDate.getMonth(), startDay = new Date(y, m, 1).getDay(), days = new Date(y, m+1, 0).getDate();
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            
+            let pnl = 0, html = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(h => `<div class="bg-base/90 py-3 text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/10">${h}</div>`).join('');
+            grid.className = "grid grid-cols-7 gap-[1px] bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-2xl mt-4";
+            for (let i = 0; i < startDay; i++) html += `<div class="bg-base/40 min-h-[90px]"></div>`;
+            
+            let weekNum = 1, currentWeekSum = 0, currentWeekTrades = 0;
+            const todayStr = new Date().toDateString();
+
+            for (let d = 1; d <= days; d++) {
+                const dateObj = new Date(y, m, d), dayOfWeek = dateObj.getDay();
+                const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const dt = active.filter(t => t.date === dStr && t.status === 'closed');
+                const daySum = dt.reduce((s, t) => s + (currentUnit === 'usd' ? (t.actualTicks * (UNITS[t.symbol]||1)) : t.actualTicks), 0);
+                
+                pnl += daySum; currentWeekSum += daySum; currentWeekTrades += dt.length;
+
+                const dateCircle = (todayStr === dateObj.toDateString()) ? `<div class="bg-primary text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] shadow-[0_0_8px_rgba(59,130,246,0.8)]">${d}</div>` : `<span class="text-[11px] text-gray-500 font-mono">${d}</span>`;
+
+                let emoji = '';
+                if (dt.length > 0) {
+                    let aCount = 0, bCount = 0, cCount = 0;
+                    dt.forEach(t => {
+                        const p = Object.values(t.compliance||{}).filter(v => v === true).length;
+                        const r = tagPool.complianceRules.length ? p / tagPool.complianceRules.length : 1;
+                        if (r === 1) aCount++; else if (r >= 0.6) bCount++; else cCount++;
+                    });
+                    if (cCount > 0) emoji = '❗️'; else if (aCount >= bCount) emoji = '💎'; else emoji = '⭐';
+                }
+
+                if (dayOfWeek === 6) {
+                    const sumColor = currentWeekSum > 0 ? 'text-success' : (currentWeekSum < 0 ? 'text-danger' : 'text-gray-400');
+                    const wValStr = currentUnit === 'usd' ? (currentWeekSum < 0 ? `-$${Math.abs(currentWeekSum).toFixed(2)}` : `$${currentWeekSum.toFixed(2)}`) : `${currentWeekSum > 0 ? '+' : ''}${currentWeekSum.toFixed(0)}t`;
+                    html += `<div class="bg-base/80 min-h-[90px] p-2 flex flex-col items-center border-l border-white/5 relative shadow-inner cursor-default"><div class="w-full flex justify-between items-start">${dateCircle}<span class="text-[10px]">${emoji}</span></div><div class="flex-1 flex flex-col justify-center items-center pb-2"><span class="text-[9px] text-gray-400 font-bold mb-0.5 uppercase tracking-widest">Week ${weekNum}</span><span class="text-sm font-bold font-mono ${sumColor}">${wValStr}</span><span class="text-[9px] text-gray-500 mt-1">${currentWeekTrades} tr</span></div></div>`;
+                    currentWeekSum = 0; currentWeekTrades = 0; weekNum++;
+                } else {
+                    let bgClass = 'bg-base/60 hover:bg-white/5', dataHtml = '';
+                    if (dt.length > 0) {
+                        bgClass = daySum > 0 ? 'bg-[#0f2e1b] hover:bg-[#153e24]' : (daySum < 0 ? 'bg-[#3b1216] hover:bg-[#4d171d]' : 'bg-white/10 hover:bg-white/20');
+                        const valColor = daySum >= 0 ? 'text-success' : 'text-danger';
+                        const valStr = currentUnit === 'usd' ? (daySum < 0 ? `-$${Math.abs(daySum).toFixed(2)}` : `$${daySum.toFixed(2)}`) : `${daySum > 0 ? '+' : ''}${daySum.toFixed(0)}t`;
+                        dataHtml = `<div class="flex-1 flex flex-col items-center justify-center pb-2"><div class="text-[15px] font-bold font-mono ${valColor}">${valStr}</div><div class="text-[9px] ${valColor} opacity-70 mt-1 tracking-wider">${dt.length} tr</div></div>`;
+                    }
+                    html += `<div onclick="${dt.length > 0 ? `window.showDayDetail('${dStr}')` : ''}" class="${bgClass} min-h-[90px] p-2 flex flex-col relative ${dt.length > 0 ? 'cursor-pointer transition-colors border border-white/5' : ''}"><div class="flex justify-between items-start w-full">${dateCircle}<span class="text-[10px] drop-shadow-md">${emoji}</span></div>${dataHtml}</div>`;
+                }
+            }
+
+            const lastDay = new Date(y, m, days).getDay();
+            if (lastDay !== 6) {
+                for (let i = lastDay + 1; i < 6; i++) html += `<div class="bg-base/40 min-h-[90px]"></div>`;
+                const sumColor = currentWeekSum > 0 ? 'text-success' : (currentWeekSum < 0 ? 'text-danger' : 'text-gray-400');
+                const wValStr = currentUnit === 'usd' ? (currentWeekSum < 0 ? `-$${Math.abs(currentWeekSum).toFixed(2)}` : `$${currentWeekSum.toFixed(2)}`) : `${currentWeekSum > 0 ? '+' : ''}${currentWeekSum.toFixed(0)}t`;
+                html += `<div class="bg-base/80 min-h-[90px] p-2 flex flex-col items-center border-l border-white/5 relative shadow-inner cursor-default"><div class="w-full flex justify-between items-start"><span class="text-[11px] text-gray-500 font-mono">-</span></div><div class="flex-1 flex flex-col justify-center items-center pb-2"><span class="text-[9px] text-gray-400 font-bold mb-0.5 uppercase tracking-widest">Week ${weekNum}</span><span class="text-sm font-bold font-mono ${sumColor}">${wValStr}</span><span class="text-[9px] text-gray-500 mt-1">${currentWeekTrades} tr</span></div></div>`;
+            }
+
+            grid.innerHTML = html; 
+            const pnlClass = pnl >= 0 ? 'text-success' : 'text-danger';
+            header.innerHTML = `
+                <button onclick="window.changeMonth(-1)" class="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">◀</button>
+                <div class="flex flex-col items-center justify-center">
+                    <div class="text-sm font-bold text-gray-300 mb-1 tracking-wider">Monthly P/L: <span class="${pnlClass} font-mono">${pnl >= 0 ? '+' : ''}${Math.abs(pnl).toFixed(2)}${currentUnit==='usd'?'$':'t'}</span></div>
+                    <div class="text-lg font-bold text-white tracking-widest uppercase">${monthNames[m]} ${y}</div>
+                </div>
+                <button onclick="window.changeMonth(1)" class="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">▶</button>
+            `;
+        };
+
+        window.changeMonth = function(delta) { calCurrentDate.setMonth(calCurrentDate.getMonth() + delta); window.renderCalendar(); };
+
+        window.renderAnalytics = function() {
+            const active = window.getFilteredTrades().filter(t => t.status === 'closed'); if (!active.length) return;
+            const stats = window.calcStats(active);
+
+            // 1. Radar Chart Data
+            if (globalCharts.radar) globalCharts.radar.destroy();
+            const radarCanvas = document.getElementById('radarChart');
+            if (radarCanvas) {
+                const safePF = Number(stats.pf) >= 99 ? 100 : Math.min((Number(stats.pf) || 0) * 33.3, 100);
+                const safeRR = Math.min((Number(stats.avgRR) || 0) * 33.3, 100);
+                const safeComp = stats.count ? Math.round((stats.aaa / stats.count) * 100) : 0;
+                const safeSurv = Math.max(0, 100 - (stats.losses / (stats.count || 1) * 100));
+
+                globalCharts.radar = new Chart(radarCanvas.getContext('2d'), { type: 'radar', data: { labels: ['WIN RATE', 'RISK/REWARD', 'PROFIT FACTOR', 'COMPLIANCE', 'SURVIVAL'], datasets: [{ data: [stats.winRate, safeRR, safePF, safeComp, safeSurv], backgroundColor: 'rgba(59,130,246,0.2)', borderColor: '#3b82f6', borderWidth: 2, pointBackgroundColor: '#3b82f6', pointBorderColor: '#ffffff' }] }, options: { maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display: false, stepSize: 20 }, angleLines: { color: 'rgba(255,255,255,0.1)' }, grid: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { color: '#9ca3af', font: { family: 'Courier New', size: 9, weight: 'bold' } } } }, plugins: { legend: { display: false } } } }); 
+            }
+
+            // Define sMap safely here for both the Strategy Bar Chart and Strategy Cards
+            const sMap = {}; active.forEach(t => (t.strategies||[]).forEach(s => { if(!sMap[s]) sMap[s] = []; sMap[s].push(t); }));
+            const sArr = Object.keys(sMap).map(s => ({ name: s, ...window.calcStats(sMap[s]) })).sort((a,b) => b.pnl - a.pnl);
+
+            // 2. Strategy Bar Chart (Horizontal)
+            if (globalCharts.strategyBar) globalCharts.strategyBar.destroy();
+            const stratCanvas = document.getElementById('strategyBarChart');
+            if (stratCanvas) { globalCharts.strategyBar = new Chart(stratCanvas.getContext('2d'), { type: 'bar', data: { labels: sArr.map(s => s.name), datasets: [{ data: sArr.map(s => s.pnl), backgroundColor: sArr.map(s => s.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: { family: 'Courier New' } } }, y: { grid: { display: false }, ticks: { color: '#9ca3af', font: { family: 'Courier New', weight: 'bold' } } } } } }); }
+
+            // 3. Mood Bar Chart
+            const mMap = {}; active.forEach(t => (t.moods||[]).forEach(m => { if(!mMap[m]) mMap[m] = []; mMap[m].push(t); }));
+            const mArr = Object.keys(mMap).map(m => ({ name: m, ...window.calcStats(mMap[m]) }));
+            if (globalCharts.moodBar) globalCharts.moodBar.destroy();
+            const moodCanvas = document.getElementById('moodBarChart');
+            if (moodCanvas) { globalCharts.moodBar = new Chart(moodCanvas.getContext('2d'), { type: 'bar', data: { labels: mArr.map(m => m.name), datasets: [{ data: mArr.map(m => m.pnl), backgroundColor: mArr.map(m => m.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { family: 'Courier New', weight: 'bold' } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: { family: 'Courier New' } } } } } }); }
+
+            // 4. Time Edge Chart
+            const dowNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const timeDataMap = { 'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Asia': 0, 'London': 0, 'NY': 0 };
+            active.forEach(t => {
+                const d = new Date(t.date + 'T00:00:00'); const day = dowNames[d.getDay()]; const pnl = window.getPnL(t, currentUnit);
+                if (day === 'Monday') timeDataMap['Mon'] += pnl; if (day === 'Tuesday') timeDataMap['Tue'] += pnl; if (day === 'Wednesday') timeDataMap['Wed'] += pnl; if (day === 'Thursday') timeDataMap['Thu'] += pnl; if (day === 'Friday') timeDataMap['Fri'] += pnl;
+                if (t.session === 'Asia') timeDataMap['Asia'] += pnl; if (t.session === 'London') timeDataMap['London'] += pnl; if (t.session === 'NY') timeDataMap['NY'] += pnl;
+            });
+            const timeLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Asia', 'London', 'NY'], timeData = timeLabels.map(l => timeDataMap[l]), timeColors = timeData.map(v => v >= 0 ? '#10b981' : '#ef4444');
+            if (globalCharts.timeEdge) globalCharts.timeEdge.destroy();
+            const timeCanvas = document.getElementById('timeEdgeBarChart');
+            if (timeCanvas) { globalCharts.timeEdge = new Chart(timeCanvas.getContext('2d'), { type: 'bar', data: { labels: timeLabels, datasets: [{ data: timeData, backgroundColor: timeColors, borderRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { family: 'Courier New', weight: 'bold' } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: { family: 'Courier New' } } } } } }); }
+
+            // 5. Context Edge Chart
+            const ctxMap = {}; active.forEach(t => (t.contexts||[]).forEach(c => { if(!ctxMap[c]) ctxMap[c] = []; ctxMap[c].push(t); }));
+            const ctxArr = Object.keys(ctxMap).map(c => ({ name: c, ...window.calcStats(ctxMap[c]) }));
+            if (globalCharts.contextEdge) globalCharts.contextEdge.destroy();
+            const contextCanvas = document.getElementById('contextEdgeBarChart');
+            if (contextCanvas) { globalCharts.contextEdge = new Chart(contextCanvas.getContext('2d'), { type: 'bar', data: { labels: ctxArr.map(c => c.name), datasets: [{ data: ctxArr.map(c => c.pnl), backgroundColor: ctxArr.map(c => c.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { family: 'Courier New', weight: 'bold' } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: { family: 'Courier New' } } } } } }); }
+
+            // 6. Direction Edge Chart (多空表现)
+            const dirMap = { 'Long': [], 'Short': [] }; 
+            active.forEach(t => { const d = t.direction || 'Long'; if(!dirMap[d]) dirMap[d] = []; dirMap[d].push(t); });
+            const dirArr = Object.keys(dirMap).map(d => ({ name: d, ...window.calcStats(dirMap[d]) }));
+            if (globalCharts.directionBar) globalCharts.directionBar.destroy();
+            const directionCanvas = document.getElementById('directionBarChart');
+            if (directionCanvas) {
+                globalCharts.directionBar = new Chart(directionCanvas.getContext('2d'), { 
+                    type: 'bar', 
+                    data: { 
+                        labels: dirArr.map(d => `${d.name} (${d.winRate}%)`), 
+                        datasets: [{ data: dirArr.map(d => d.pnl), backgroundColor: dirArr.map(d => d.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] 
+                    }, 
+                    options: { 
+                        maintainAspectRatio: false, 
+                        plugins: { legend: { display: false } }, 
+                        scales: { 
+                            x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { family: 'Courier New', weight: 'bold' } } }, 
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: { family: 'Courier New' } } } 
+                        } 
+                    } 
+                }); 
+            }
+
+            // 7. Global Patterns
+            const pMap = {};
+            active.forEach(t => {
+                const sig = (t.signals||[]).sort().join('&'), key = `${t.strategies[0]}|${(t.contexts||[])[0]}|${t.session}|${sig}|${(t.entryModes||[])[0]}`;
+                if (!pMap[key]) pMap[key] = { tags: [t.strategies[0], (t.contexts||[])[0], t.session, sig], trades: [] }; pMap[key].trades.push(t);
+            });
+            const pScores = Object.values(pMap).map(p => ({ ...p, ...window.calcStats(p.trades) })).filter(p => p.count >= 2);
+            const top = [...pScores].filter(p => p.pnl > 0).sort((a,b) => b.pnl - a.pnl).slice(0, 3), worst = [...pScores].filter(p => p.pnl < 0).sort((a,b) => a.pnl - b.pnl).slice(0, 3); 
+
+            const renderP = (p) => { const color = p.pnl >= 0 ? 'text-success' : 'text-danger', displayWR = p.pnl >= 0 ? p.winRate : p.impact; return `<div class="p-4 border rounded-xl bg-panel border-white/5 hover:bg-white/[0.03] transition-colors"><div class="flex flex-wrap gap-1 mb-3">${p.tags.map(tag => `<span class="px-2 py-0.5 rounded bg-black/50 text-[10px] text-gray-400 font-bold border border-white/5">${tag || 'Any'}</span>`).join('')}</div><div class="flex justify-between items-end"><div class="text-[10px] text-gray-500">${p.count} tr</div><div class="text-right font-mono font-bold ${color}">${p.pnl > 0 ? '+' : ''}${p.pnl.toFixed(0)} <span class="text-[9px] opacity-70 ml-2">NET: ${displayWR}%</span></div></div></div>`; };
+
+            const tCont = document.getElementById('top-edges-container'); if(tCont) tCont.innerHTML = top.length ? top.map(renderP).join('') : '<div class="p-4 text-xs text-gray-500 italic text-center border border-white/5 rounded-xl bg-panel">尚未发现稳定的盈利形态。</div>';
+            const lCont = document.getElementById('top-leaks-container'); if(lCont) lCont.innerHTML = worst.length ? worst.map(renderP).join('') : '<div class="p-4 text-xs text-gray-500 italic text-center border border-white/5 rounded-xl bg-panel">Great! No recurring leaks.</div>';
+            
+            // 7. Dynamic Strategy Drill-down
+            const scCont = document.getElementById('analytics-strategy-cards'); 
+            if(scCont) {
+                // Clear old dynamic charts safely
+                if (globalCharts.dynamicCharts) { globalCharts.dynamicCharts.forEach(c => c.destroy()); }
+                globalCharts.dynamicCharts = [];
+
+                const chartTasks = [];
+                let cardsHtml = '';
+                
+                sArr.forEach(sObj => {
+                    const sName = sObj.name;
+                    const tradesList = sMap[sName];
+                    const sStats = sObj;
+                    const safeId = sName.replace(/\W/g, '_');
+                    
+                    const getBW = (list, keyFn) => {
+                        const m = {};
+                        list.forEach(t => {
+                            const k = keyFn(t);
+                            if(!k) return;
+                            if(Array.isArray(k)) { k.forEach(x => { if(!m[x]) m[x]=[]; m[x].push(t); }); }
+                            else { if(!m[k]) m[k]=[]; m[k].push(t); }
+                        });
+                        const a = Object.keys(m).map(k => ({ name: k, ...window.calcStats(m[k]) })).filter(x => x.count > 0);
+                        if(a.length === 0) return { best: null, worst: null };
+                        a.sort((a,b) => b.winRate - a.winRate || b.pnl - a.pnl);
+                        return { best: a[0], worst: a[a.length-1] };
+                    };
+                    
+                    const sessionBW = getBW(tradesList, t => t.session);
+                    const contextBW = getBW(tradesList, t => t.contexts);
+
+                    const sigMap = {}; tradesList.forEach(t => { const k = (t.signals||[]).sort().join(' + ') || 'Base'; if(!sigMap[k]) sigMap[k] = []; sigMap[k].push(t); });
+                    const sigArr = Object.keys(sigMap).map(k => ({name: k, ...window.calcStats(sigMap[k])})).sort((a,b)=>b.pnl - a.pnl);
+                    const signalsHtml = sigArr.map(s => { const c = s.pnl >= 0 ? '#10b981' : '#ef4444'; const displayWR = s.pnl >= 0 ? s.winRate : s.impact; return `<div class="flex items-center justify-between p-3 bg-white/[0.02] rounded-xl border border-white/5 mb-2"><div class="flex-1"><div class="text-[11px] font-bold text-primary mb-1">${s.name}</div><div class="text-[9px] text-gray-400 mt-1">${s.count} trades</div></div><div class="flex items-center space-x-4">${createTextDonut(displayWR, c, displayWR+'%')}<div class="w-12 text-right font-mono font-bold text-xs" style="color:${c}">${s.pnl>0?'+':''}${s.pnl.toFixed(0)}</div></div></div>`; }).join('');
+
+                    const enMap = {}; tradesList.forEach(t => { const k = (t.entryModes||[])[0] || 'Any'; if(!enMap[k]) enMap[k] = []; enMap[k].push(t); });
+                    const enArr = Object.keys(enMap).map(k => ({name: k, ...window.calcStats(enMap[k])}));
+                    
+                    const grades = { 'A (完美)': [], 'B (部分)': [], 'C (违规)': [] };
+                    tradesList.forEach(t => { const p = Object.values(t.compliance||{}).filter(v => v === true).length; const r = tagPool.complianceRules.length ? p / tagPool.complianceRules.length : 1; if(r === 1) grades['A (完美)'].push(t); else if(r >= 0.6) grades['B (部分)'].push(t); else grades['C (违规)'].push(t); });
+                    const compArr = Object.keys(grades).map(k => ({name: k, ...window.calcStats(grades[k])}));
+
+                    const mdMap = {}; tradesList.forEach(t => { const k = (t.moods||[])[0] || 'Any'; if(!mdMap[k]) mdMap[k] = []; mdMap[k].push(t); });
+                    const mdArr = Object.keys(mdMap).map(k => ({name: k, ...window.calcStats(mdMap[k])}));
+
+                    cardsHtml += `<div class="glass-card p-6 border border-white/5 mb-8 shadow-xl">
+                        <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/5">
+                            <h3 class="text-xl font-bold text-white flex items-center"><span class="w-3 h-3 bg-primary rounded-full mr-3 shadow-[0_0_10px_#3b82f6]"></span>${sName}</h3>
+                            <div class="text-right">
+                                <span class="text-2xl font-bold font-mono ${sStats.pnl>=0?'text-success':'text-danger'}">${sStats.pnl>0?'+':''}${sStats.pnl.toFixed(0)}</span>
+                                <span class="text-[10px] text-gray-500 block mt-1">Win Rate: ${sStats.winRate}% | ${sStats.count} Trades</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-black/30 p-4 rounded-xl border border-white/5">
+                                <div class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-3">Session Edge (时段优势)</div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <div class="flex items-center"><span class="bg-success/20 text-success text-[9px] px-1.5 py-0.5 rounded font-bold mr-2">BEST</span><span class="text-white text-sm">${sessionBW.best ? sessionBW.best.name : '--'}</span></div>
+                                    <div class="text-right font-mono text-xs ${sessionBW.best?.pnl>=0?'text-success':'text-danger'}">${sessionBW.best ? sessionBW.best.winRate + '% WR' : ''}</div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center"><span class="bg-danger/20 text-danger text-[9px] px-1.5 py-0.5 rounded font-bold mr-2">WORST</span><span class="text-white text-sm">${sessionBW.worst ? sessionBW.worst.name : '--'}</span></div>
+                                    <div class="text-right font-mono text-xs ${sessionBW.worst?.pnl>=0?'text-success':'text-danger'}">${sessionBW.worst ? sessionBW.worst.winRate + '% WR' : ''}</div>
+                                </div>
+                            </div>
+                            <div class="bg-black/30 p-4 rounded-xl border border-white/5">
+                                <div class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-3">Context Edge (环境优势)</div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <div class="flex items-center"><span class="bg-success/20 text-success text-[9px] px-1.5 py-0.5 rounded font-bold mr-2">BEST</span><span class="text-white text-sm">${contextBW.best ? contextBW.best.name : '--'}</span></div>
+                                    <div class="text-right font-mono text-xs ${contextBW.best?.pnl>=0?'text-success':'text-danger'}">${contextBW.best ? contextBW.best.winRate + '% WR' : ''}</div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center"><span class="bg-danger/20 text-danger text-[9px] px-1.5 py-0.5 rounded font-bold mr-2">WORST</span><span class="text-white text-sm">${contextBW.worst ? contextBW.worst.name : '--'}</span></div>
+                                    <div class="text-right font-mono text-xs ${contextBW.worst?.pnl>=0?'text-success':'text-danger'}">${contextBW.worst ? contextBW.worst.winRate + '% WR' : ''}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-black/30 p-4 rounded-xl border border-white/5 h-[280px] flex flex-col">
+                                <h3 class="text-[11px] font-bold text-blue-400 mb-3 tracking-widest uppercase shrink-0">Signals (信号组合)</h3>
+                                <div class="flex-1 overflow-y-auto pr-2 space-y-2">${signalsHtml}</div>
+                            </div>
+                            <div class="bg-black/30 p-4 rounded-xl border border-white/5 h-[280px] flex flex-col">
+                                <h3 class="text-[11px] font-bold text-blue-400 mb-3 tracking-widest uppercase shrink-0">Entry Mode (入场方式)</h3>
+                                <div class="relative w-full flex-1 min-h-0"><canvas id="entryCanvas_${safeId}"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                            <div class="bg-black/30 p-4 rounded-xl border border-white/5 h-[280px] flex flex-col">
+                                <h3 class="text-[11px] font-bold text-blue-400 mb-3 tracking-widest uppercase shrink-0">Compliance (一致性)</h3>
+                                <div class="relative w-full flex-1 min-h-0"><canvas id="compCanvas_${safeId}"></canvas></div>
+                            </div>
+                            <div class="bg-black/30 p-4 rounded-xl border border-white/5 h-[280px] flex flex-col">
+                                <h3 class="text-[11px] font-bold text-blue-400 mb-3 tracking-widest uppercase shrink-0">Mood Impact (情绪影响)</h3>
+                                <div class="relative w-full flex-1 min-h-0"><canvas id="moodCanvas_${safeId}"></canvas></div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                    chartTasks.push(() => {
+                        const enCtx = document.getElementById(`entryCanvas_${safeId}`);
+                        if(enCtx) globalCharts.dynamicCharts.push(new Chart(enCtx.getContext('2d'), { type: 'bar', data: { labels: enArr.map(e => e.name), datasets: [{ data: enArr.map(e => e.pnl), backgroundColor: enArr.map(e => e.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: {family: 'Courier New', weight: 'bold'} } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: {family: 'Courier New'} } } } } }));
+
+                        const compCtx = document.getElementById(`compCanvas_${safeId}`);
+                        if(compCtx) globalCharts.dynamicCharts.push(new Chart(compCtx.getContext('2d'), { type: 'bar', data: { labels: compArr.map(c => c.name), datasets: [{ data: compArr.map(c => c.pnl), backgroundColor: compArr.map(c => c.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: {family: 'Courier New'} } }, y: { grid: { display: false }, ticks: { color: '#9ca3af', font: {family: 'Courier New', weight: 'bold'} } } } } }));
+
+                        const moodCtx = document.getElementById(`moodCanvas_${safeId}`);
+                        if(moodCtx) globalCharts.dynamicCharts.push(new Chart(moodCtx.getContext('2d'), { type: 'bar', data: { labels: mdArr.map(m => m.name), datasets: [{ data: mdArr.map(m => m.pnl), backgroundColor: mdArr.map(m => m.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: {family: 'Courier New', weight: 'bold'} } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: {family: 'Courier New'} } } } } }));
+                    });
+                });
+                
+                scCont.innerHTML = cardsHtml;
+                chartTasks.forEach(task => task());
+            }
+        };
+
+        window.updateAccountFilterOptions = function() {
+            const select = document.getElementById('global-account-filter'); if (!select) return;
+            const currentVal = select.value;
+            select.innerHTML = '<option value="ALL">所有账号 (All Accounts)</option>' + tagPool.accounts.map(a => `<option value="${a}">${a}</option>`).join('');
+            select.value = tagPool.accounts.includes(currentVal) ? currentVal : 'ALL';
+        };
+
+        const Dialog = {
+            show: function({ title, message, type = 'confirm', defaultValue = '' }) {
+                return new Promise((resolve) => {
+                    const modal = document.getElementById('custom-dialog'), titleEl = document.getElementById('dialog-title'), msgEl = document.getElementById('dialog-message'), inputEl = document.getElementById('dialog-input'), cancelBtn = document.getElementById('dialog-cancel'), confirmBtn = document.getElementById('dialog-confirm');
+                    titleEl.innerText = title;
+                    if (message) { msgEl.innerText = message; msgEl.classList.remove('hidden'); } else { msgEl.classList.add('hidden'); }
+                    if (type === 'prompt') { inputEl.value = defaultValue; inputEl.classList.remove('hidden'); setTimeout(() => inputEl.focus(), 100); } else { inputEl.classList.add('hidden'); }
+                    confirmBtn.className = title.includes('删除') ? "text-sm px-4 py-1.5 rounded font-bold bg-danger text-white shadow-lg" : "text-sm px-4 py-1.5 rounded font-bold bg-primary text-white shadow-lg";
+                    modal.classList.remove('hidden'); modal.classList.add('flex');
+                    const cleanup = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); cancelBtn.onclick = null; confirmBtn.onclick = null; inputEl.onkeydown = null; };
+                    cancelBtn.onclick = () => { cleanup(); resolve(null); };
+                    confirmBtn.onclick = () => { cleanup(); resolve(type === 'prompt' ? inputEl.value : true); };
+                    inputEl.onkeydown = (e) => { if (e.key === 'Enter') confirmBtn.click(); if (e.key === 'Escape') cancelBtn.click(); };
+                });
+            }
+        };
+
+        window.initTagSystem = function(type) {
+            const input = document.getElementById(`${type}-input`), dropdown = document.getElementById(`${type}-dropdown`);
+            if (!input || !dropdown) return;
+            input.onfocus = () => window.renderDropdown(type);
+            input.onclick = () => window.renderDropdown(type);
+            input.oninput = () => window.renderDropdown(type, input.value.trim());
+            input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); if (input.value.trim()) window.addTagToPool(type, input.value.trim()); } };
+            dropdown.onmousedown = (e) => {
+                const target = e.target.closest('[data-action]'); if (!target) return;
+                e.preventDefault(); e.stopPropagation();
+                if (target.dataset.action === 'select') window.selectTag(type, target.dataset.tag);
+                else if (target.dataset.action === 'create') window.addTagToPool(type, target.dataset.value);
+                else if (target.dataset.action === 'edit') window.editTagFromPool(type, target.dataset.tag);
+                else if (target.dataset.action === 'delete') window.deleteTagFromPool(type, target.dataset.tag);
+            };
+            const container = document.getElementById(`${type}-container`);
+            if (container) { const tagBox = container.querySelector('.tag-input-container'); if (tagBox) tagBox.addEventListener('click', (e) => { if (e.target !== input && e.target.tagName !== 'BUTTON') { input.focus(); window.renderDropdown(type); } }); }
+            document.addEventListener('mousedown', (e) => { const c = document.getElementById(`${type}-container`); if (c && !c.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.add('hidden'); });
+        };
+
+        window.renderDropdown = function(type, filter = '') {
+            const dropdown = document.getElementById(`${type}-dropdown`), p = typeToPlural[type];
+            const currentFormKey = type === 'exitMood' ? 'exitMoods' : p;
+            const filtered = (tagPool[p] || []).filter(t => t.toLowerCase().includes(filter.toLowerCase()));
+            let html = `<div class="px-3 py-2 text-[10px] text-gray-500 font-bold border-b border-white/5 uppercase tracking-wider">选择或管理</div><div class="py-1">`;
+            filtered.forEach(tag => {
+                const isSel = currentForm[currentFormKey].includes(tag);
+                html += `<div class="flex items-center justify-between px-3 py-2 hover:bg-primary/10 group cursor-pointer transition-colors ${isSel ? 'bg-primary/5' : ''}" data-action="select" data-tag="${tag}"><div class="flex-1 text-sm ${isSel ? 'text-primary font-bold' : 'text-gray-300'} pointer-events-none">${tag}</div><div class="flex space-x-3 opacity-0 group-hover:opacity-100 transition-opacity"><button type="button" data-action="edit" data-tag="${tag}" class="text-gray-500 hover:text-white text-xs p-1">✎</button><button type="button" data-action="delete" data-tag="${tag}" class="text-gray-400 hover:text-danger text-xs font-bold p-1">✕</button></div></div>`;
+            });
+            if (filter && !filtered.length) html += `<div class="px-3 py-2 text-primary text-xs cursor-pointer hover:bg-primary/5" data-action="create" data-value="${filter}">+ 建立新词卡 "${filter}"</div>`;
+            dropdown.innerHTML = html + `</div>`; dropdown.classList.remove('hidden');
+        };
+
+        window.selectTag = function(type, tag) {
+            const currentFormKey = type === 'exitMood' ? 'exitMoods' : typeToPlural[type];
+            if (type === 'account') currentForm[currentFormKey] = [tag]; else if (!currentForm[currentFormKey].includes(tag)) currentForm[currentFormKey].push(tag);
+            document.getElementById(`${type}-input`).value = ''; document.getElementById(`${type}-dropdown`).classList.add('hidden'); window.renderSelectedTags(type);
+        };
+
+        window.renderSelectedTags = function(type) {
+            const currentFormKey = type === 'exitMood' ? 'exitMoods' : typeToPlural[type];
+            const container = document.getElementById(`selected-${currentFormKey}`); if (!container) return;
+            container.innerHTML = currentForm[currentFormKey].map((tag, i) => `<div class="tag-badge">${tag}<button type="button" class="ml-1" onclick="window.removeSelectedTag('${type}', ${i})">✕</button></div>`).join('');
+            if (type === 'account') { const input = document.getElementById('account-input'); if (currentForm[currentFormKey].length > 0) input.removeAttribute('required'); else input.setAttribute('required', 'required'); }
+        };
+
+        window.removeSelectedTag = function(type, i) { const k = type==='exitMood'?'exitMoods':typeToPlural[type]; currentForm[k].splice(i, 1); window.renderSelectedTags(type); };
+        window.addTagToPool = function(t, tag) { const p = typeToPlural[t]; if (!tagPool[p].includes(tag)) { tagPool[p].push(tag); localStorage.setItem(TAG_POOL_KEY, JSON.stringify(tagPool)); window.updateAccountFilterOptions(); if(t==='account') window.renderSettings(); } window.selectTag(t, tag); };
+        window.editTagFromPool = async function(type, oldTag) { const newTag = await Dialog.show({ title: '重命名词卡', type: 'prompt', defaultValue: oldTag }); if (newTag && newTag.trim() !== oldTag) { const clean = newTag.trim(), p = typeToPlural[type], k = type==='exitMood'?'exitMoods':p, idx = tagPool[p].indexOf(oldTag); if (idx > -1) tagPool[p][idx] = clean; const sIdx = currentForm[k].indexOf(oldTag); if (sIdx > -1) currentForm[k][sIdx] = clean; localStorage.setItem(TAG_POOL_KEY, JSON.stringify(tagPool)); window.renderDropdown(type); window.renderSelectedTags(type); window.updateAccountFilterOptions(); if(type==='account') window.renderSettings(); } };
+        window.deleteTagFromPool = async function(type, tag) { const confirmed = await Dialog.show({ title: '删除词卡', message: `确定删除 "${tag}" 吗？`, type: 'confirm' }); if (confirmed) { const p = typeToPlural[type], k = type==='exitMood'?'exitMoods':p; tagPool[p] = tagPool[p].filter(t => t !== tag); currentForm[k] = currentForm[k].filter(t => t !== tag); localStorage.setItem(TAG_POOL_KEY, JSON.stringify(tagPool)); window.renderDropdown(type); window.renderSelectedTags(type); window.updateAccountFilterOptions(); if(type==='account') window.renderSettings(); } };
+
+        window.renderComplianceRules = function() {
+            document.getElementById('compliance-rules-grid').innerHTML = tagPool.complianceRules.map(rule => {
+                const isChecked = currentForm.compliance[rule] === true;
+                return `<div class="flex items-center justify-between group p-1.5 rounded hover:bg-white/5 transition-all"><label class="flex items-center space-x-2 cursor-pointer flex-1"><input type="checkbox" onchange="currentForm.compliance['${rule}'] = this.checked" ${isChecked ? 'checked' : ''} class="rounded bg-gray-800 border-gray-600 text-primary h-3.5 w-3.5 focus:ring-0"><span class="${isChecked ? 'text-white font-medium' : 'text-gray-500'}">${rule}</span></label><div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity"><button type="button" onclick="window.editRule('${rule}')" class="text-gray-600 hover:text-white text-xs p-1">✎</button><button type="button" onclick="window.deleteRule('${rule}')" class="text-gray-400 hover:text-danger text-xs font-bold p-1">✕</button></div></div>`;
+            }).join('');
+        };
+        window.addNewRule = function() { const input = document.getElementById('new-rule-input'), val = input.value.trim(); if (val && !tagPool.complianceRules.includes(val)) { tagPool.complianceRules.push(val); localStorage.setItem(TAG_POOL_KEY, JSON.stringify(tagPool)); input.value = ''; window.renderComplianceRules(); } };
+        window.editRule = async function(oldRule) { const newVal = await Dialog.show({ title: '修改规则', type: 'prompt', defaultValue: oldRule }); if(newVal && newVal.trim() !== oldRule) { const clean = newVal.trim(), idx = tagPool.complianceRules.indexOf(oldRule); if(idx > -1) { tagPool.complianceRules[idx] = clean; if(currentForm.compliance[oldRule] !== undefined) { currentForm.compliance[clean] = currentForm.compliance[oldRule]; delete currentForm.compliance[oldRule]; } localStorage.setItem(TAG_POOL_KEY, JSON.stringify(tagPool)); window.renderComplianceRules(); } } };
+        window.deleteRule = async function(rule) { const confirmed = await Dialog.show({ title: '删除规则', message: `确定删除吗？`, type: 'confirm' }); if(confirmed) { tagPool.complianceRules = tagPool.complianceRules.filter(r => r !== rule); delete currentForm.compliance[rule]; localStorage.setItem(TAG_POOL_KEY, JSON.stringify(tagPool)); window.renderComplianceRules(); } };
+
+        window.updateEntryCalc = function() {
+            const sym = document.getElementById('symbol').value;
+            const u = UNITS[sym] || 5;
+            const rt = parseFloat(document.getElementById('risk-ticks').value);
+            if(!isNaN(rt)) document.getElementById('risk-usd').value = (rt * u).toFixed(2);
+            const tt = parseFloat(document.getElementById('target-ticks').value);
+            if(!isNaN(tt)) document.getElementById('target-usd').value = (tt * u).toFixed(2);
+        };
+
+        window.updateExitCalc = function() {
+            const actual = parseFloat(document.getElementById('exit-ticks').value);
+            const editId = document.getElementById('edit-exit-id').value;
+            let active = editId ? trades.find(t => t.id === parseInt(editId)) : window.getActiveTrade(); 
+            
+            if(!active) return;
+            const symbol = active.symbol;
+            if(!isNaN(actual)) {
+                const usd = actual * (UNITS[symbol] || 5);
+                const el = document.getElementById('exit-usd');
+                el.value = usd.toFixed(2);
+                el.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold ${usd>=0?'text-success':'text-danger'}`;
+            }
+        };
+
+        window.switchView = function(id, btn) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            const dc = document.getElementById('view-dashboard-components'); if (dc) dc.classList.add('hidden');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            if(id === 'view-dashboard' && dc) dc.classList.remove('hidden');
+            const target = document.getElementById(id); if (target) target.classList.remove('hidden');
+            if (btn) btn.classList.add('active'); 
+            if (id === 'view-history') window.renderHistory(); 
+            if (id === 'view-analytics') { requestAnimationFrame(() => { setTimeout(() => window.renderAnalytics(), 50); }); }
+        };
+
+        window.handleEntrySubmit = function(e) {
+            e.preventDefault();
+            if (currentForm.accounts.length === 0) { alert("请选择或添加一个账号！"); return; }
+            
+            const idInput = document.getElementById('edit-trade-id').value;
+            const id = idInput ? parseInt(idInput) : Date.now();
+            const existing = idInput ? trades.find(t => t.id === id) : null;
+
+            const newTrade = {
+                id: id, 
+                status: existing ? existing.status : 'open',
+                symbol: document.getElementById('symbol').value, 
+                direction: document.getElementById('direction').value,
+                date: document.getElementById('trade-date').value, entryTime: document.getElementById('entry-time').value, session: document.getElementById('session').value,
+                riskTicks: parseFloat(document.getElementById('risk-ticks').value) || 0, 
+                riskUsd: parseFloat(document.getElementById('risk-usd').value) || 0,
+                targetTicks: parseFloat(document.getElementById('target-ticks').value) || 0,
+                targetUsd: parseFloat(document.getElementById('target-usd').value) || 0,
+                accounts: [...currentForm.accounts], strategies: [...currentForm.strategies], signals: [...currentForm.signals], moods: [...currentForm.moods], locations: [...currentForm.locations], contexts: [...currentForm.contexts], entryModes: [...currentForm.entryModes], compliance: {...currentForm.compliance}
+            };
+            
+            // 继承已有的出场数据（如果是在编辑）
+            if (existing) {
+                newTrade.exitTime = existing.exitTime || '';
+                newTrade.actualTicks = existing.actualTicks || 0;
+                newTrade.actualUsd = existing.actualUsd || 0;
+                newTrade.exitMood = existing.exitMood || [];
+                newTrade.notes = existing.notes || '';
+            }
+
+            if (existing) {
+                const idx = trades.findIndex(t => t.id === id);
+                if (idx > -1) trades[idx] = newTrade;
+            } else {
+                const isHalt = window.checkDiscipline(newTrade);
+                trades.push(newTrade);
+                if (isHalt) {
+                    window.saveData();
+                    window.closeEntryModal();
+                    window.updateButtonState();
+                    window.triggerHalt();
+                    return;
+                }
+            }
+            
+            window.saveData();
+            window.closeEntryModal();
+            window.updateButtonState();
+            window.refreshDashboard();
+        };
+
+        // 即时检测当前日期的连损状况
+        window.checkImmediateHalt = function(dateStr) {
+            const maxLosses = config.maxConsecutiveLosses || 3;
+            const sameDayClosed = trades.filter(t => t.status === 'closed' && t.date === dateStr)
+                .sort((a,b) => new Date(`${a.date}T${a.exitTime || '00:00'}:00`).getTime() - new Date(`${b.date}T${b.exitTime || '00:00'}:00`).getTime());
+            
+            if (!sameDayClosed.length) return false;
+
+            let consecutiveLosses = 0;
+            for (let i = sameDayClosed.length - 1; i >= 0; i--) {
+                if (sameDayClosed[i].actualTicks < 0) consecutiveLosses++;
+                else break;
+            }
+            return consecutiveLosses >= maxLosses;
+        };
+
+        window.handleExitSubmit = function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('edit-exit-id').value;
+            let active = editId ? trades.find(t => t.id === parseInt(editId)) : window.getActiveTrade(); 
+            
+            if(!active) return;
+            
+            active.status = 'closed';
+            active.exitTime = document.getElementById('exit-time').value;
+            active.actualTicks = parseFloat(document.getElementById('exit-ticks').value);
+            active.actualUsd = parseFloat(document.getElementById('exit-usd').value);
+            active.exitMood = [...currentForm.exitMoods];
+            active.notes = document.getElementById('trade-notes').value;
+            
+            window.saveData(); 
+            window.closeExitModal(); 
+            window.updateButtonState(); 
+            window.refreshDashboard();
+
+            // 只有在非编辑状态下（即新单刚刚结单）且亏损时，才触发连损熔断警告
+            if (!editId && active.actualTicks < 0 && window.checkImmediateHalt(active.date)) {
+                window.triggerHalt();
+            }
+        };
+
+        window.renderHistory = function() {
+            const active = window.getFilteredTrades().sort((a,b) => b.id - a.id);
+            document.getElementById('history-table-body').innerHTML = active.map(t => {
+                const isOpen = t.status === 'open';
+                const val = window.getPnL(t, currentUnit);
+                const pnlClass = isOpen ? 'text-warning' : (val >= 0 ? 'text-success' : 'text-danger');
+                
+                let pnlDisplay = '';
+                if(isOpen) {
+                    pnlDisplay = '<span class="bg-warning/20 text-warning px-2 py-0.5 rounded text-[10px]">ACTIVE</span>';
+                } else {
+                    pnlDisplay = `${val > 0 ? '+' : ''}${currentUnit === 'usd' ? '$' : ''}${Math.abs(val).toFixed(currentUnit === 'usd' ? 2 : 0)}${currentUnit === 'tick' ? 't' : ''}`;
+                }
+
+                const dirColor = t.direction === 'Short' ? 'text-danger' : 'text-success';
+                const dirBadge = `<span class="${dirColor} text-[10px] ml-1 px-1 bg-white/5 rounded border border-white/10">${t.direction === 'Short' ? 'S' : 'L'}</span>`;
+                return `<tr class="border-b border-white/5 text-xs hover:bg-white/[0.02] transition-colors"><td class="py-3 px-4"><input type="checkbox" class="bulk-checkbox trade-checkbox" value="${t.id}" onchange="window.updateSelectedCount()"></td><td class="py-3 px-4"><div class="font-mono text-gray-400">${t.date}</div><div class="text-[9px] text-gray-500 mt-0.5">${t.entryTime||'--:--'} ${t.exitTime ? '→ '+t.exitTime : ''}</div></td><td class="py-3 px-4"><div class="font-bold text-white">${t.symbol} ${dirBadge}</div><div class="text-[9px] text-gray-400 mt-0.5">${(t.accounts||[])[0]} | ${t.session}</div></td><td class="py-3 px-4"><div class="text-primary font-bold">${(t.strategies||[]).join(', ')}</div></td><td class="py-3 px-4 text-right font-mono font-bold ${pnlClass}">${pnlDisplay}</td><td class="py-3 px-4 text-right">
+                    <button onclick="window.editEntry(${t.id})" class="mx-1 text-primary hover:text-blue-400 transition-colors" title="编辑进场 (Entry)">📝</button>
+                    ${!isOpen ? `<button onclick="window.editExit(${t.id})" class="mx-1 text-success hover:text-emerald-400 transition-colors" title="编辑出场 (Exit)">🏁</button>` : ''}
+                    <button onclick="window.deleteTrade(${t.id})" class="mx-1 text-gray-500 hover:text-danger transition-colors" title="删除记录">✕</button>
+                </td></tr>`;
+            }).join('');
+            window.updateSelectedCount();
+        };
+
+        window.editEntry = function(id) {
+            const t = trades.find(tr => tr.id === id); if (!t) return;
+            document.getElementById('edit-trade-id').value = t.id;
+            document.getElementById('symbol').value = t.symbol || 'NQ';
+            document.getElementById('direction').value = t.direction || 'Long';
+            document.getElementById('trade-date').value = t.date;
+            document.getElementById('entry-time').value = t.entryTime || '';
+            document.getElementById('session').value = t.session || 'NY';
+            
+            document.getElementById('risk-ticks').value = t.riskTicks || 20;
+            document.getElementById('risk-usd').value = t.riskUsd !== undefined ? t.riskUsd : ((t.riskTicks || 20) * (UNITS[t.symbol||'NQ']||5));
+            document.getElementById('target-ticks').value = t.targetTicks || '';
+            document.getElementById('target-usd').value = t.targetUsd !== undefined ? t.targetUsd : (t.targetTicks ? t.targetTicks * (UNITS[t.symbol||'NQ']||5) : '');
+            
+            Object.keys(typeToPlural).forEach(type => { 
+                if (type !== 'exitMood') {
+                    currentForm[typeToPlural[type]] = [...(t[typeToPlural[type]] || [])]; 
+                    window.renderSelectedTags(type); 
+                }
+            });
+            currentForm.compliance = {...t.compliance};
+            window.renderComplianceRules(); 
+            
+            document.getElementById('entry-modal').classList.remove('hidden'); 
+            document.getElementById('entry-modal').classList.add('flex'); 
+        };
+
+        window.editExit = function(id) {
+            const t = trades.find(tr => tr.id === id); if (!t) return;
+            document.getElementById('edit-exit-id').value = t.id;
+            
+            document.getElementById('close-info-header').innerHTML = `<div><span class="text-primary font-bold mr-2">${t.symbol}</span> <span>${t.date} ${t.entryTime}</span></div><div>Strategy: <span class="text-white">${(t.strategies||[]).join(', ')}</span></div>`;
+            document.getElementById('exit-time').value = t.exitTime || '';
+            
+            document.getElementById('exit-ticks').value = t.actualTicks || 0;
+            const initUsd = t.actualUsd !== undefined ? t.actualUsd : ((t.actualTicks || 0) * (UNITS[t.symbol]||5));
+            const usdEl = document.getElementById('exit-usd');
+            usdEl.value = initUsd.toFixed(2);
+            usdEl.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold ${initUsd>=0?'text-success':'text-danger'}`;
+
+            document.getElementById('trade-notes').value = t.notes || '';
+            
+            currentForm.exitMoods = [...(t.exitMood || t.moods || [])]; 
+            window.renderSelectedTags('exitMood');
+            window.updateExitCalc();
+            
+            document.getElementById('close-modal').classList.remove('hidden'); 
+            document.getElementById('close-modal').classList.add('flex');
+        };
+
+        window.toggleAllTrades = function(checked) { document.querySelectorAll('.trade-checkbox').forEach(cb => cb.checked = checked); window.updateSelectedCount(); };
+        window.updateSelectedCount = function() {
+            const selected = document.querySelectorAll('.trade-checkbox:checked').length; const btn = document.getElementById('batch-delete-btn');
+            if (selected > 0) { btn.classList.remove('hidden'); document.getElementById('selected-count').innerText = selected; } 
+            else { btn.classList.add('hidden'); document.getElementById('select-all-trades').checked = false; }
+        };
+
+        window.deleteSelectedTrades = async function() {
+            const checkboxes = document.querySelectorAll('.trade-checkbox:checked');
+            const idsToDelete = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            const confirmed = await Dialog.show({ title: '批量删除', message: `确认永久删除这 ${idsToDelete.length} 条记录吗？`, type: 'confirm' });
+            if (confirmed) { trades = trades.filter(t => !idsToDelete.includes(t.id)); window.saveData(); window.updateButtonState(); window.refreshDashboard(); }
+        };
+        window.deleteTrade = async function(id) {
+            const confirmed = await Dialog.show({ title: '删除记录', message: '确定永久删除这条记录吗？', type: 'confirm' });
+            if (confirmed) { trades = trades.filter(t => t.id !== id); window.saveData(); window.updateButtonState(); window.refreshDashboard(); } 
+        };
+
+        window.showDayDetail = function(date) {
+            const dt = window.getFilteredTrades().filter(t => t.date === date && t.status === 'closed'); if(!dt.length) return;
+            document.getElementById('day-detail-modal').classList.remove('hidden'); document.getElementById('day-detail-modal').classList.add('flex');
+            document.getElementById('day-modal-title').innerText = `Log: ${date}`;
+            document.getElementById('day-modal-content').innerHTML = dt.map(t => `<div class="p-3 bg-white/5 rounded border border-white/10 flex justify-between items-center"><div><div class="text-sm font-bold text-white">${t.symbol} <span class="text-gray-500 text-xs font-mono ml-2">${t.entryTime} - ${t.exitTime}</span></div><div class="text-[9px] text-gray-500 mt-1">${(t.accounts||[])[0]}</div></div><div class="text-sm font-bold ${t.actualTicks>=0?'text-success':'text-danger'}">${t.actualTicks}t</div></div>`).join('');
+        };
+
+        window.closeDayModal = function() { document.getElementById('day-detail-modal').classList.add('hidden'); document.getElementById('day-detail-modal').classList.remove('flex'); };
+        
+        window.openEntryModal = function() { 
+            document.getElementById('trade-date').valueAsDate = new Date();
+            document.getElementById('entry-time').value = new Date().toTimeString().slice(0,5);
+            window.updateEntryCalc();
+            document.getElementById('entry-modal').classList.remove('hidden'); document.getElementById('entry-modal').classList.add('flex'); 
+        };
+        window.closeEntryModal = function() { 
+            document.getElementById('entry-modal').classList.add('hidden'); document.getElementById('entry-modal').classList.remove('flex');
+            document.getElementById('entry-form').reset(); 
+            document.getElementById('edit-trade-id').value = '';
+            currentForm = { accounts: [], signals: [], strategies: [], moods: [], exitMoods: [], locations: [], contexts: [], entryModes: [], compliance: {} }; 
+            Object.keys(typeToPlural).forEach(window.renderSelectedTags); 
+        };
+
+        window.openExitModal = function(activeTrade) {
+            if(!activeTrade) return;
+            document.getElementById('close-info-header').innerHTML = `<div><span class="text-primary font-bold mr-2">${activeTrade.symbol}</span> <span>${activeTrade.date} ${activeTrade.entryTime}</span></div><div>Strategy: <span class="text-white">${activeTrade.strategies.join(', ')}</span></div>`;
+            document.getElementById('exit-time').value = new Date().toTimeString().slice(0,5);
+            document.getElementById('close-modal').classList.remove('hidden'); document.getElementById('close-modal').classList.add('flex');
+        };
+        window.closeExitModal = function() {
+            document.getElementById('close-modal').classList.add('hidden'); document.getElementById('close-modal').classList.remove('flex');
+            document.getElementById('close-form').reset();
+            const usdEl = document.getElementById('exit-usd');
+            usdEl.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold`;
+            document.getElementById('edit-exit-id').value = '';
+            currentForm.exitMoods = []; window.renderSelectedTags('exitMood');
+        };
+
+        window.triggerHalt = function() {
+            document.getElementById('halt-modal').style.display = 'flex';
+            
+            // 加入抖动动画，3秒后自动移除以防止视觉疲劳
+            const contentEl = document.getElementById('halt-content');
+            contentEl.classList.add('animate-bounce');
+            setTimeout(() => {
+                contentEl.classList.remove('animate-bounce');
+            }, 3000);
+            
+            // 使用配置的冷却时间
+            const cooldownMin = config.haltCooldownMinutes || 60;
+            let timeLeft = cooldownMin * 60;
+            const timerEl = document.getElementById('halt-timer');
+            const btnEl = document.getElementById('halt-close-btn');
+            btnEl.classList.add('hidden');
+            
+            if (window.haltInterval) clearInterval(window.haltInterval);
+            window.haltInterval = setInterval(() => {
+                const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+                timerEl.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                if (--timeLeft < 0) { 
+                    clearInterval(window.haltInterval); 
+                    btnEl.classList.remove('hidden'); 
+                }
+            }, 1000);
+        };
+        window.dismissHalt = function() { document.getElementById('halt-modal').style.display = 'none'; window.refreshDashboard(); };
+
+        window.renderSettings = function() {
+            const container = document.getElementById('initial-balance-grid'); if(!container) return;
+            container.innerHTML = tagPool.accounts.map(acc => `
+                <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 hover:border-white/20 transition-colors">
+                    <span class="text-sm font-bold text-gray-300 truncate pr-2">${acc}</span>
+                    <div class="flex items-center bg-black/50 border border-white/10 rounded-lg px-2 focus-within:border-primary">
+                        <span class="text-gray-500 mr-1">$</span>
+                        <input type="number" class="bg-transparent py-1.5 w-20 text-right text-sm font-mono outline-none text-white" value="${config.initialBalances[acc] || 0}" onchange="window.updateConfigBalance('${acc}', this.value)">
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('max-consecutive-losses').value = config.maxConsecutiveLosses || 3;
+            const cooldownInput = document.getElementById('halt-cooldown-minutes');
+            if (cooldownInput) cooldownInput.value = config.haltCooldownMinutes || 60;
+        };
+
+        window.updateConfigBalance = function(acc, val) { config.initialBalances[acc] = parseFloat(val) || 0; window.saveConfig(); window.refreshDashboard(); };
+        window.updateConfig = function(key, val) { config[key] = parseFloat(val) || 0; window.saveConfig(); };
+        
+        window.saveConfig = function() { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); };
+        window.saveData = function() { localStorage.setItem(STORAGE_KEY, JSON.stringify(trades)); };
+        
+        window.resetData = function() { if (confirm("⚠️ 确定重置所有缓存数据吗？这将清空所有记录！")) { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(CONFIG_KEY); location.reload(); } };
+        
+        window.exportData = function() {
+            const blob = new Blob([JSON.stringify({trades, config, tagPool})], {type: 'application/json'});
+            const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `TradeArch_Backup_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
+        };
+        window.importData = function(input) {
+            if(!input.files.length) return;
+            const reader = new FileReader();
+            reader.onload = e => { try { const data = JSON.parse(e.target.result); if (data.trades) { trades = data.trades; config = data.config || config; tagPool = data.tagPool || tagPool; window.saveData(); window.saveConfig(); localStorage.setItem(TAG_POOL_KEY, JSON.stringify(tagPool)); location.reload(); } } catch(err) { alert('文件格式错误！'); } };
+            reader.readAsText(input.files[0]);
+        };
+
+        window.onload = () => {
+            window.updateAccountFilterOptions(); 
+            window.initTagSystem('account'); window.initTagSystem('strategy'); window.initTagSystem('signal'); window.initTagSystem('mood'); window.initTagSystem('exitMood');
+            window.initTagSystem('context'); window.initTagSystem('location'); window.initTagSystem('entryMode');
+            window.renderComplianceRules(); 
+            window.renderSettings();
+            window.refreshDashboard();
+        };
+    </script>
+</body>
+</html>
