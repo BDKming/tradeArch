@@ -70,7 +70,7 @@
         }
     </style>
 </head>
-<body class="bg-base text-gray-200 h-screen overflow-hidden flex">
+<body class="bg-base text-gray-200 h-screen w-full overflow-hidden flex">
 
     <!-- 侧边导航 -->
     <aside class="w-20 border-r border-white/5 flex flex-col items-center py-6 space-y-8 z-10 shrink-0 bg-base">
@@ -705,9 +705,28 @@
             const canvas = document.getElementById('balanceLineChart');
             if (canvas) {
                 const ctx = canvas.getContext('2d');
-                const grad = ctx.createLinearGradient(0, 0, 0, canvas.parentElement.clientHeight);
-                grad.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
-                globalCharts.equity = new Chart(ctx, { type: 'line', data: { labels: tradeLabels, datasets: [{ data: series, borderColor: '#3b82f6', backgroundColor: grad, borderWidth: 2, fill: true, pointRadius: 0, pointHoverRadius: 4, tension: 0.1 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 9 }, maxTicksLimit: 5 } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', callback: v => (currentUnit==='usd'?'$':'')+v+(currentUnit==='tick'?'t':'') } } }, interaction: { mode: 'index', intersect: false } } });
+                globalCharts.equity = new Chart(ctx, { 
+                    type: 'line', 
+                    data: { 
+                        labels: tradeLabels, 
+                        datasets: [{ 
+                            data: series, 
+                            borderWidth: 2, 
+                            fill: {
+                                target: 'origin',
+                                above: 'rgba(59, 130, 246, 0.15)',
+                                below: 'rgba(239, 68, 68, 0.15)'
+                            },
+                            segment: {
+                                borderColor: ctx => ctx.p1.parsed.y < 0 ? '#ef4444' : '#3b82f6'
+                            },
+                            pointRadius: 0, 
+                            pointHoverRadius: 4, 
+                            tension: 0.1 
+                        }] 
+                    }, 
+                    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 9 }, maxTicksLimit: 5 } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', callback: v => (currentUnit==='usd'?'$':'')+v+(currentUnit==='tick'?'t':'') } } }, interaction: { mode: 'index', intersect: false } } 
+                });
             }
             
             window.drawDailyPnlChart(dailyPnLMap);
