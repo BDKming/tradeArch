@@ -27,6 +27,16 @@
         }
     </script>
     <style>
+        /* 新增：强制根元素占满整个视口，修复右侧断层空白 */
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000000;
+        }
+        
         .glass-card {
             background: rgba(28, 28, 30, 0.7);
             backdrop-filter: blur(20px);
@@ -70,7 +80,7 @@
         }
     </style>
 </head>
-<body class="bg-base text-gray-200 h-screen w-full overflow-hidden flex">
+<body class="bg-base text-gray-200 w-screen h-screen overflow-hidden flex m-0 p-0">
 
     <!-- 侧边导航 -->
     <aside class="w-20 border-r border-white/5 flex flex-col items-center py-6 space-y-8 z-10 shrink-0 bg-base">
@@ -91,8 +101,8 @@
         </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col p-6 overflow-hidden relative bg-base">
-        <header class="flex justify-between items-center mb-6 shrink-0">
+    <main class="flex-1 grow min-w-0 w-full flex flex-col p-6 overflow-hidden relative bg-base">
+        <header class="w-full flex justify-between items-center mb-6 shrink-0">
             <div class="flex space-x-3">
                 <select id="unit-filter" class="bg-white/5 border border-white/10 text-sm rounded-lg px-3 py-2 outline-none focus:border-primary" onchange="refreshDashboard()">
                     <option value="tick">全局单位: Ticks</option>
@@ -109,7 +119,7 @@
             </button>
         </header>
 
-        <div class="overflow-y-auto pr-2 flex-1 pb-10">
+        <div class="overflow-y-auto w-full pr-2 flex-1 pb-10">
             
             <!-- Dashboard View -->
             <div id="view-dashboard-components" class="space-y-6">
