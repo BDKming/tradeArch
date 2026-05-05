@@ -324,9 +324,9 @@
                     </div>
                     <div class="pt-6 border-t border-white/5 flex flex-wrap gap-4">
                         <button onclick="exportData()" class="bg-primary/10 text-primary border border-primary/30 px-6 py-2 rounded-lg hover:bg-primary/20 transition-all font-bold text-sm">导出备份 (JSON)</button>
-                        <button onclick="document.getElementById('import-file').click()" class="bg-warning/10 text-warning border border-warning/30 px-6 py-2 rounded-lg hover:bg-warning/20 transition-all font-bold text-sm">导入恢复 (合并到云端)</button>
+                        <button onclick="document.getElementById('import-file').click()" class="bg-warning/10 text-warning border border-warning/30 px-6 py-2 rounded-lg hover:bg-warning/20 transition-all font-bold text-sm">导入恢复</button>
                         <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(this)">
-                        <button onclick="resetData()" class="bg-danger/10 text-danger border border-danger/30 px-6 py-2 rounded-lg hover:bg-danger/20 transition-all font-bold text-sm ml-auto">清除所有云端数据</button>
+                        <button onclick="resetData()" class="bg-danger/10 text-danger border border-danger/30 px-6 py-2 rounded-lg hover:bg-danger/20 transition-all font-bold text-sm ml-auto">清空数据</button>
                     </div>
                 </div>
             </section>
@@ -448,6 +448,13 @@
                             <input type="number" id="exit-usd" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold" placeholder="+/- $" required>
                         </div>
                     </div>
+
+                    <!-- 【新增】一键 BE 选项 -->
+                    <div class="flex items-center bg-white/5 p-4 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onclick="document.getElementById('in-be').click()">
+                        <input type="checkbox" id="in-be" onchange="window.toggleBE(this.checked)" class="w-5 h-5 mr-3 accent-success cursor-pointer" onclick="event.stopPropagation()">
+                        <label class="text-sm font-black text-white uppercase cursor-pointer flex-1 tracking-wider">Mark as Break-Even (BE)</label>
+                        <span class="text-[10px] font-bold text-success bg-success/10 px-2 py-1 rounded tracking-widest">AUTO-FILL 0</span>
+                    </div>
                     
                     <div class="relative space-y-1" id="exitMood-container">
                         <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Exit Mood</label>
@@ -556,21 +563,22 @@
         let calCurrentDate = new Date(); 
         window.currentForm = { accounts: [], signals: [], strategies: [], moods: [], exitMoods: [], locations: [], contexts: [], entryModes: [], compliance: {} };
         
+        const defaultTags = {
+            accounts: ['Apex Eval 50K', 'Topstep Funded'], strategies: ['真突破', '假突破', 'Breakout', 'MeanReversion'],
+            moods: ['Confident', 'FOMO', 'Patient', 'Fear'], exitMoods: ['Happy', 'Frustrated', 'Relieved', 'Greedy'], signals: ['被套大单', '主动大单', 'CVD背离', 'VP进攻', 'TrendLine'],
+            locations: ['VAL', 'VAH', 'POC', '显著区', 'VWAP'], contexts: ['震荡/平衡市场', '趋势/失衡市场', 'High Volatility'],
+            entryModes: ['Market (市价)', 'Limit (挂单)', 'Stop Limit'], complianceRules: ['遵循进场原则', '设定并坚守止损', '不超仓执行']
+        };
+
+        // 恢复为默认配置（无模拟数据）
         let config = { initialBalances: {}, maxConsecutiveLosses: 3, haltCooldownMinutes: 60 };
-        let tagPool = { accounts: [], strategies: [], moods: [], exitMoods: [], signals: [], locations: [], contexts: [], entryModes: [], complianceRules: [] };
+        let tagPool = JSON.parse(JSON.stringify(defaultTags));
         let trades = [];
         
         window.tempEntryImage = null;
         window.tempExitImage = null;
 
         let globalCharts = { radar: null, strategyBar: null, moodBar: null, timeEdge: null, contextEdge: null, directionBar: null, dailyPnl: null, equity: null, dynamicCharts: [] };
-
-        const defaultTags = {
-            accounts: ['Apex Eval 50K', 'Topstep Funded'], strategies: ['Breakout', 'MeanReversion'],
-            moods: ['Confident', 'FOMO', 'Patient', 'Fear'], exitMoods: ['Happy', 'Frustrated', 'Relieved', 'Greedy'], signals: ['TrendLine', 'V-Profile', '吸收', 'VWAP'],
-            locations: ['VAL', 'VAH', 'POC', 'VWAP'], contexts: ['Downtrend', 'Uptrend', 'Ranging', 'High Volatility'],
-            entryModes: ['Market', 'Limit', 'Stop'], complianceRules: ['遵循进场原则', '设定并坚守止损', '不超仓执行']
-        };
 
         Chart.defaults.color = '#9ca3af';
         Chart.defaults.font.family = '"Courier New", Courier, monospace';
@@ -591,9 +599,11 @@
                 setupFirestoreListeners(user.uid);
             } else {
                 currentUser = null;
+                // 恢复正式版设置，强制弹窗要求登录
                 overlay.classList.remove('hidden');
                 status.innerHTML = `<span class="text-danger">Disconnected</span>`;
-                trades = []; window.refreshDashboard();
+                trades = []; 
+                window.refreshDashboard();
             }
         });
 
@@ -617,7 +627,6 @@
             btn.disabled = true; spinner.classList.remove('hidden');
 
             try {
-                // 根据是否勾选"记住我"来设置持久化策略
                 await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
 
                 if (isLoginMode) {
@@ -654,25 +663,42 @@
 
             onSnapshot(collection(db, 'artifacts', 'TradeArch', 'users', uid, 'trades'), (snapshot) => {
                 trades = snapshot.docs.map(doc => doc.data());
-                trades = trades.map(t => ({ ...t, status: t.status || 'closed', entryTime: t.entryTime || '09:30', exitTime: t.exitTime || (t.status === 'open' ? '' : '10:00'), direction: t.direction || 'Long' }));
+                // 保留：强力清洗历史中的 NaN 数据为 0，防止图表崩溃
+                trades = trades.map(t => ({ 
+                    ...t, 
+                    status: t.status || 'closed', 
+                    entryTime: t.entryTime || '09:30', 
+                    exitTime: t.exitTime || (t.status === 'open' ? '' : '10:00'), 
+                    direction: t.direction || 'Long',
+                    actualUsd: (t.actualUsd === null || isNaN(parseFloat(t.actualUsd))) ? 0 : parseFloat(t.actualUsd),
+                    actualTicks: (t.actualTicks === null || isNaN(parseFloat(t.actualTicks))) ? 0 : parseFloat(t.actualTicks)
+                }));
                 window.refreshDashboard();
             }, (error) => console.error(error));
         }
 
-        window.saveTradeToCloud = async (trade) => { if (currentUser) await setDoc(doc(db, 'artifacts', 'TradeArch', 'users', currentUser.uid, 'trades', String(trade.id)), trade); };
+        // 移除本地缓存逻辑，完全依赖云端
+        window.saveTradeToCloud = async (trade) => { 
+            if (currentUser) await setDoc(doc(db, 'artifacts', 'TradeArch', 'users', currentUser.uid, 'trades', String(trade.id)), trade); 
+        };
         window.deleteTradeFromCloud = async (trade) => {
             if (!currentUser) return;
             await deleteDoc(doc(db, 'artifacts', 'TradeArch', 'users', currentUser.uid, 'trades', String(trade.id)));
             try { if (trade.entryImage) await deleteObject(ref(storage, trade.entryImage)); } catch(e){}
             try { if (trade.exitImage) await deleteObject(ref(storage, trade.exitImage)); } catch(e){}
         };
-        window.saveConfigToCloud = async () => { if (currentUser) await setDoc(doc(db, 'artifacts', 'TradeArch', 'users', currentUser.uid, 'config', 'main'), config); };
-        window.saveTagPoolToCloud = async () => { if (currentUser) await setDoc(doc(db, 'artifacts', 'TradeArch', 'users', currentUser.uid, 'tagPool', 'main'), tagPool); };
+        window.saveConfigToCloud = async () => { 
+            if (currentUser) await setDoc(doc(db, 'artifacts', 'TradeArch', 'users', currentUser.uid, 'config', 'main'), config); 
+        };
+        window.saveTagPoolToCloud = async () => { 
+            if (currentUser) await setDoc(doc(db, 'artifacts', 'TradeArch', 'users', currentUser.uid, 'tagPool', 'main'), tagPool); 
+        };
 
         // ==========================================
         // 3. 截图上传引擎
         // ==========================================
         async function uploadImageToStorage(base64Str, tradeId, type) {
+            if (!currentUser) return base64Str; // 防御机制
             const path = `artifacts/TradeArch/users/${currentUser.uid}/images/${tradeId}_${type}_${Date.now()}.png`;
             const storageRef = ref(storage, path);
             await uploadString(storageRef, base64Str, 'data_url');
@@ -764,7 +790,7 @@
             });
             const stdDev = closedTrades.length ? Math.sqrt(sumSq / closedTrades.length) : 0;
             const sharpe = stdDev === 0 ? (mean > 0 ? '99.9' : (mean < 0 ? '-99.9' : '0')) : (mean / stdDev).toFixed(2);
-            const total = wins + losses, wr = total ? Math.round((wins / total) * 100) : 0, pf = gLoss ? (gProf / gLoss).toFixed(2) : (gProf ? '99.9' : '0');
+            const total = closedTrades.length, wr = total ? Math.round((wins / total) * 100) : 0, pf = gLoss ? (gProf / gLoss).toFixed(2) : (gProf ? '99.9' : '0');
             const impact = total ? Math.round(((wins - losses) / total) * 100) : 0, avgWin = wins ? (gProf / wins).toFixed(2) : 0, avgLoss = losses ? (gLoss / losses).toFixed(2) : 0, avgRR = wins ? (totalR / wins).toFixed(2) : 0;
             return { count: total, winRate: wr, pf, pnl, impact, ev: total ? (pnl/total).toFixed(1) : 0, gProf, gLoss, wins, losses, avgWin, avgLoss, avgRR, aaa, sharpe };
         };
@@ -823,7 +849,7 @@
         window.dismissHalt = function() { document.getElementById('halt-modal').style.display = 'none'; };
 
         window.refreshDashboard = function() {
-            if(!currentUser) return;
+            if(!currentUser) return; // 恢复：未登录时不刷新图表
             currentUnit = document.getElementById('unit-filter').value;
             const active = window.getFilteredTrades(), m = window.calcStats(active); 
             let series = [0], maxDdAbsolute = 0, currentBalance = document.getElementById('global-account-filter').value === 'ALL' ? Object.values(config.initialBalances||{}).reduce((a,b)=>a+Number(b||0), 0) : (Number(config.initialBalances[document.getElementById('global-account-filter').value]) || 0);
@@ -866,7 +892,7 @@
 
         window.drawDailyPnlChart = function(dailyPnLMap) {
             const canvas = document.getElementById('dailyPnlBarChart'); if (!canvas) return;
-            const dates = Object.keys(dailyPnLMap).sort((a,b) => new Date(a) - new Date(b)), data = dates.map(d => dailyPnLMap[d]), colors = data.map(v => v >= 0 ? '#10b981' : '#ef4444'), labels = dates.map(d => { const p = d.split('-'); return p.length===3 ? `${p[1]}/${p[2]}` : d; });
+            const dates = Object.keys(dailyPnLMap).sort((a,b) => new Date(a) - new Date(b)), data = dates.map(d => dailyPnLMap[d]), colors = data.map(v => v > 0 ? '#10b981' : (v < 0 ? '#ef4444' : '#6b7280')), labels = dates.map(d => { const p = d.split('-'); return p.length===3 ? `${p[1]}/${p[2]}` : d; });
             if (globalCharts.dailyPnl) globalCharts.dailyPnl.destroy();
             globalCharts.dailyPnl = new Chart(canvas.getContext('2d'), { type: 'bar', data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 2 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 9 } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', callback: v => (currentUnit==='usd'?'$':'')+v+(currentUnit==='tick'?'t':'') } } } } });
         };
@@ -901,7 +927,7 @@
                     let bgClass = 'bg-base/60 hover:bg-white/5', dataHtml = '';
                     if (dt.length > 0) {
                         bgClass = daySum > 0 ? 'bg-[#0f2e1b] hover:bg-[#153e24]' : (daySum < 0 ? 'bg-[#3b1216] hover:bg-[#4d171d]' : 'bg-white/10 hover:bg-white/20');
-                        const valColor = daySum >= 0 ? 'text-success' : 'text-danger';
+                        const valColor = daySum > 0 ? 'text-success' : (daySum < 0 ? 'text-danger' : 'text-gray-400');
                         const valStr = currentUnit === 'usd' ? (daySum < 0 ? `-$${Math.abs(daySum).toFixed(2)}` : `$${daySum.toFixed(2)}`) : `${daySum > 0 ? '+' : ''}${daySum.toFixed(0)}t`;
                         dataHtml = `<div class="flex-1 flex flex-col items-center justify-center pb-2"><div class="text-[15px] font-bold font-mono ${valColor}">${valStr}</div><div class="text-[9px] ${valColor} opacity-70 mt-1 tracking-wider">${dt.length} tr</div></div>`;
                     }
@@ -915,8 +941,8 @@
                 const wValStr = currentUnit === 'usd' ? (currentWeekSum < 0 ? `-$${Math.abs(currentWeekSum).toFixed(2)}` : `$${currentWeekSum.toFixed(2)}`) : `${currentWeekSum > 0 ? '+' : ''}${currentWeekSum.toFixed(0)}t`;
                 html += `<div class="bg-base/80 min-h-[90px] p-2 flex flex-col items-center border-l border-white/5 relative shadow-inner cursor-default"><div class="w-full flex justify-between items-start"><span class="text-[11px] text-gray-500 font-mono">-</span></div><div class="flex-1 flex flex-col justify-center items-center pb-2"><span class="text-[9px] text-gray-400 font-bold mb-0.5 uppercase tracking-widest">Week ${weekNum}</span><span class="text-sm font-bold font-mono ${sumColor}">${wValStr}</span><span class="text-[9px] text-gray-500 mt-1">${currentWeekTrades} tr</span></div></div>`;
             }
-            grid.innerHTML = html; const pnlClass = pnl >= 0 ? 'text-success' : 'text-danger';
-            header.innerHTML = `<button onclick="window.changeMonth(-1)" class="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">◀</button><div class="flex flex-col items-center justify-center"><div class="text-sm font-bold text-gray-300 mb-1 tracking-wider">Monthly P/L: <span class="${pnlClass} font-mono">${pnl >= 0 ? '+' : ''}${Math.abs(pnl).toFixed(2)}${currentUnit==='usd'?'$':'t'}</span></div><div class="text-lg font-bold text-white tracking-widest uppercase">${monthNames[m]} ${y}</div></div><button onclick="window.changeMonth(1)" class="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">▶</button>`;
+            grid.innerHTML = html; const pnlClass = pnl > 0 ? 'text-success' : (pnl < 0 ? 'text-danger' : 'text-gray-400');
+            header.innerHTML = `<button onclick="window.changeMonth(-1)" class="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">◀</button><div class="flex flex-col items-center justify-center"><div class="text-sm font-bold text-gray-300 mb-1 tracking-wider">Monthly P/L: <span class="${pnlClass} font-mono">${pnl > 0 ? '+' : ''}${Math.abs(pnl).toFixed(2)}${currentUnit==='usd'?'$':'t'}</span></div><div class="text-lg font-bold text-white tracking-widest uppercase">${monthNames[m]} ${y}</div></div><button onclick="window.changeMonth(1)" class="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">▶</button>`;
         };
 
         window.changeMonth = function(delta) { calCurrentDate.setMonth(calCurrentDate.getMonth() + delta); window.renderCalendar(); };
@@ -969,8 +995,8 @@
                 if (globalCharts.dynamicCharts) { globalCharts.dynamicCharts.forEach(c => c.destroy()); }
                 globalCharts.dynamicCharts = []; const chartTasks = []; let cardsHtml = '';
                 
-                sArr.forEach(sObj => {
-                    const sName = sObj.name, tradesList = sMap[sName], safeId = sName.replace(/\W/g, '_');
+                sArr.forEach((sObj, index) => {
+                    const sName = sObj.name, tradesList = sMap[sName], safeId = 'strat_' + index;
                     const getBW = (list, keyFn) => { const m = {}; list.forEach(t => { const k = keyFn(t); if(!k) return; if(Array.isArray(k)) { k.forEach(x => { if(!m[x]) m[x]=[]; m[x].push(t); }); } else { if(!m[k]) m[k]=[]; m[k].push(t); } }); const a = Object.keys(m).map(k => ({ name: k, ...window.calcStats(m[k]) })).filter(x => x.count > 0); if(a.length === 0) return { best: null, worst: null }; a.sort((a,b) => b.winRate - a.winRate || b.pnl - a.pnl); return { best: a[0], worst: a[a.length-1] }; };
                     const sessionBW = getBW(tradesList, t => t.session), contextBW = getBW(tradesList, t => t.contexts);
                     const sigMap = {}; tradesList.forEach(t => { const k = (t.signals||[]).sort().join(' + ') || 'Base'; if(!sigMap[k]) sigMap[k] = []; sigMap[k].push(t); });
@@ -984,9 +1010,9 @@
                     cardsHtml += `<div class="glass-card p-6 border border-white/5 mb-8 shadow-xl"><div class="flex justify-between items-center mb-6 pb-4 border-b border-white/5"><h3 class="text-xl font-bold text-white flex items-center"><span class="w-3 h-3 bg-primary rounded-full mr-3 shadow-[0_0_10px_#3b82f6]"></span>${sName}</h3><div class="text-right"><span class="text-2xl font-bold font-mono ${sObj.pnl>=0?'text-success':'text-danger'}">${sObj.pnl>0?'+':''}${sObj.pnl.toFixed(0)}</span><span class="text-[10px] text-gray-500 block mt-1">Win Rate: ${sObj.winRate}% | ${sObj.count} Trades</span></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"><div class="bg-black/30 p-4 rounded-xl border border-white/5"><div class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-3">Session Edge (时段优势)</div><div class="flex justify-between items-center mb-2"><div class="flex items-center"><span class="bg-success/20 text-success text-[9px] px-1.5 py-0.5 rounded font-bold mr-2">BEST</span><span class="text-white text-sm">${sessionBW.best ? sessionBW.best.name : '--'}</span></div><div class="text-right font-mono text-xs ${sessionBW.best?.pnl>=0?'text-success':'text-danger'}">${sessionBW.best ? sessionBW.best.winRate + '% WR' : ''}</div></div><div class="flex justify-between items-center"><div class="flex items-center"><span class="bg-danger/20 text-danger text-[9px] px-1.5 py-0.5 rounded font-bold mr-2">WORST</span><span class="text-white text-sm">${sessionBW.worst ? sessionBW.worst.name : '--'}</span></div><div class="text-right font-mono text-xs ${sessionBW.worst?.pnl>=0?'text-success':'text-danger'}">${sessionBW.worst ? sessionBW.worst.winRate + '% WR' : ''}</div></div></div><div class="bg-black/30 p-4 rounded-xl border border-white/5"><div class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-3">Context Edge (环境优势)</div><div class="flex justify-between items-center mb-2"><div class="flex items-center"><span class="bg-success/20 text-success text-[9px] px-1.5 py-0.5 rounded font-bold mr-2">BEST</span><span class="text-white text-sm">${contextBW.best ? contextBW.best.name : '--'}</span></div><div class="text-right font-mono text-xs ${contextBW.best?.pnl>=0?'text-success':'text-danger'}">${contextBW.best ? contextBW.best.winRate + '% WR' : ''}</div></div><div class="flex justify-between items-center"><div class="flex items-center"><span class="bg-danger/20 text-danger text-[9px] px-1.5 py-0.5 rounded font-bold mr-2">WORST</span><span class="text-white text-sm">${contextBW.worst ? contextBW.worst.name : '--'}</span></div><div class="text-right font-mono text-xs ${contextBW.worst?.pnl>=0?'text-success':'text-danger'}">${contextBW.worst ? contextBW.worst.winRate + '% WR' : ''}</div></div></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="bg-black/30 p-4 rounded-xl border border-white/5 h-[280px] flex flex-col"><h3 class="text-[11px] font-bold text-blue-400 mb-3 tracking-widest uppercase shrink-0">Signals (信号组合)</h3><div class="flex-1 overflow-y-auto pr-2 space-y-2">${signalsHtml}</div></div><div class="bg-black/30 p-4 rounded-xl border border-white/5 h-[280px] flex flex-col"><h3 class="text-[11px] font-bold text-blue-400 mb-3 tracking-widest uppercase shrink-0">Entry Mode (入场方式)</h3><div class="relative w-full flex-1 min-h-0"><canvas id="entryCanvas_${safeId}"></canvas></div></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="bg-black/30 p-4 rounded-xl border border-white/5 h-[280px] flex flex-col"><h3 class="text-[11px] font-bold text-blue-400 mb-3 tracking-widest uppercase shrink-0">Compliance (一致性)</h3><div class="relative w-full flex-1 min-h-0"><canvas id="compCanvas_${safeId}"></canvas></div></div><div class="bg-black/30 p-4 rounded-xl border border-white/5 h-[280px] flex flex-col"><h3 class="text-[11px] font-bold text-blue-400 mb-3 tracking-widest uppercase shrink-0">Mood Impact (情绪影响)</h3><div class="relative w-full flex-1 min-h-0"><canvas id="moodCanvas_${safeId}"></canvas></div></div></div></div>`;
 
                     chartTasks.push(() => {
-                        const enCtx = document.getElementById(`entryCanvas_${safeId}`); if(enCtx) globalCharts.dynamicCharts.push(new Chart(enCtx.getContext('2d'), { type: 'bar', data: { labels: enArr.map(e => e.name), datasets: [{ data: enArr.map(e => e.pnl), backgroundColor: enArr.map(e => e.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: {family: 'Courier New', weight: 'bold'} } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: {family: 'Courier New'} } } } } }));
-                        const compCtx = document.getElementById(`compCanvas_${safeId}`); if(compCtx) globalCharts.dynamicCharts.push(new Chart(compCtx.getContext('2d'), { type: 'bar', data: { labels: compArr.map(c => c.name), datasets: [{ data: compArr.map(c => c.pnl), backgroundColor: compArr.map(c => c.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: {family: 'Courier New'} } }, y: { grid: { display: false }, ticks: { color: '#9ca3af', font: {family: 'Courier New', weight: 'bold'} } } } } }));
-                        const moodCtx = document.getElementById(`moodCanvas_${safeId}`); if(moodCtx) globalCharts.dynamicCharts.push(new Chart(moodCtx.getContext('2d'), { type: 'bar', data: { labels: mdArr.map(m => m.name), datasets: [{ data: mdArr.map(m => m.pnl), backgroundColor: mdArr.map(m => m.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: {family: 'Courier New', weight: 'bold'} } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: {family: 'Courier New'} } } } } }));
+                        const enCtx = document.getElementById(`entryCanvas_${safeId}`); if(enCtx) { const ex = Chart.getChart(enCtx); if(ex) ex.destroy(); globalCharts.dynamicCharts.push(new Chart(enCtx.getContext('2d'), { type: 'bar', data: { labels: enArr.map(e => e.name), datasets: [{ data: enArr.map(e => e.pnl), backgroundColor: enArr.map(e => e.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: {family: 'Courier New', weight: 'bold'} } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: {family: 'Courier New'} } } } } })); }
+                        const compCtx = document.getElementById(`compCanvas_${safeId}`); if(compCtx) { const ex = Chart.getChart(compCtx); if(ex) ex.destroy(); globalCharts.dynamicCharts.push(new Chart(compCtx.getContext('2d'), { type: 'bar', data: { labels: compArr.map(c => c.name), datasets: [{ data: compArr.map(c => c.pnl), backgroundColor: compArr.map(c => c.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: {family: 'Courier New'} } }, y: { grid: { display: false }, ticks: { color: '#9ca3af', font: {family: 'Courier New', weight: 'bold'} } } } } })); }
+                        const moodCtx = document.getElementById(`moodCanvas_${safeId}`); if(moodCtx) { const ex = Chart.getChart(moodCtx); if(ex) ex.destroy(); globalCharts.dynamicCharts.push(new Chart(moodCtx.getContext('2d'), { type: 'bar', data: { labels: mdArr.map(m => m.name), datasets: [{ data: mdArr.map(m => m.pnl), backgroundColor: mdArr.map(m => m.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: {family: 'Courier New', weight: 'bold'} } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: {family: 'Courier New'} } } } } })); }
                     });
                 });
                 scCont.innerHTML = cardsHtml; chartTasks.forEach(task => task());
@@ -1060,6 +1086,24 @@
         window.updateEntryCalc = function() { const sym = document.getElementById('symbol').value, u = UNITS[sym] || 5, rt = parseFloat(document.getElementById('risk-ticks').value); if(!isNaN(rt)) document.getElementById('risk-usd').value = (rt * u).toFixed(2); const tt = parseFloat(document.getElementById('target-ticks').value); if(!isNaN(tt)) document.getElementById('target-usd').value = (tt * u).toFixed(2); };
         window.updateExitCalc = function() { const actual = parseFloat(document.getElementById('exit-ticks').value), editId = document.getElementById('edit-exit-id').value; let active = editId ? trades.find(t => t.id === parseInt(editId)) : window.getActiveTrade(); if(!active) return; if(!isNaN(actual)) { const usd = actual * (UNITS[active.symbol] || 5), el = document.getElementById('exit-usd'); el.value = usd.toFixed(2); el.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold ${usd>=0?'text-success':'text-danger'}`; } };
 
+        // 【新增】：BE 状态一键切换逻辑
+        window.toggleBE = function(isChecked) {
+            const usd = document.getElementById('exit-usd');
+            const ticks = document.getElementById('exit-ticks');
+            if (!usd || !ticks) return;
+            if (isChecked) {
+                usd.value = 0; ticks.value = 0;
+                usd.disabled = true; ticks.disabled = true;
+                usd.classList.add('opacity-30', 'cursor-not-allowed');
+                ticks.classList.add('opacity-30', 'cursor-not-allowed');
+            } else {
+                usd.disabled = false; ticks.disabled = false;
+                usd.classList.remove('opacity-30', 'cursor-not-allowed');
+                ticks.classList.remove('opacity-30', 'cursor-not-allowed');
+                usd.value = ''; ticks.value = '';
+            }
+        };
+
         // ========== 云端提交逻辑 ==========
         window.handleEntrySubmit = async function(e) {
             e.preventDefault(); if (window.currentForm.accounts.length === 0) { alert("请选择或添加一个账号！"); return; }
@@ -1084,7 +1128,13 @@
             e.preventDefault(); const editId = document.getElementById('edit-exit-id').value; let active = editId ? trades.find(t => t.id === parseInt(editId)) : window.getActiveTrade(); if(!active) return;
             const btn = document.getElementById('exit-submit-btn'); btn.disabled = true; btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-black" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 结算中...';
 
-            active.status = 'closed'; active.exitTime = document.getElementById('exit-time').value; active.actualTicks = parseFloat(document.getElementById('exit-ticks').value); active.actualUsd = parseFloat(document.getElementById('exit-usd').value); active.exitMood = [...window.currentForm.exitMoods]; active.notes = document.getElementById('trade-notes').value;
+            let isBE = document.getElementById('in-be') ? document.getElementById('in-be').checked : false;
+            let finalTicks = isBE ? 0 : parseFloat(document.getElementById('exit-ticks').value);
+            let finalUsd = isBE ? 0 : parseFloat(document.getElementById('exit-usd').value);
+            if (isNaN(finalTicks)) finalTicks = 0;
+            if (isNaN(finalUsd)) finalUsd = 0;
+
+            active.status = 'closed'; active.exitTime = document.getElementById('exit-time').value; active.actualTicks = finalTicks; active.actualUsd = finalUsd; active.exitMood = [...window.currentForm.exitMoods]; active.notes = document.getElementById('trade-notes').value;
             try {
                 if (window.tempExitImage === 'REMOVE') { if (active.exitImage) { try{ await deleteObject(ref(storage, active.exitImage)); }catch(e){} } active.exitImage = null; } 
                 else if (window.tempExitImage) { active.exitImage = await uploadImageToStorage(window.tempExitImage, active.id, 'exit'); }
@@ -1097,8 +1147,12 @@
         window.renderHistory = function() {
             const active = window.getFilteredTrades().sort((a,b) => b.id - a.id);
             document.getElementById('history-table-body').innerHTML = active.map(t => {
-                const isOpen = t.status === 'open', val = window.getPnL(t, currentUnit), pnlClass = isOpen ? 'text-warning' : (val >= 0 ? 'text-success' : 'text-danger');
+                const isOpen = t.status === 'open', val = window.getPnL(t, currentUnit);
+                let pnlClass = isOpen ? 'text-warning' : (val > 0 ? 'text-success' : (val < 0 ? 'text-danger' : 'text-gray-400'));
                 let pnlDisplay = isOpen ? '<span class="bg-warning/20 text-warning px-2 py-0.5 rounded text-[10px]">ACTIVE</span>' : `${val > 0 ? '+' : ''}${currentUnit === 'usd' ? '$' : ''}${Math.abs(val).toFixed(currentUnit === 'usd' ? 2 : 0)}${currentUnit === 'tick' ? 't' : ''}`;
+                
+                if (!isOpen && val === 0) pnlDisplay = `<span class="bg-gray-500/20 text-gray-400 px-2 py-0.5 rounded text-[10px] font-bold">BE (0)</span>`;
+                
                 const dirBadge = `<span class="${t.direction === 'Short' ? 'text-danger' : 'text-success'} text-[10px] ml-1 px-1 bg-white/5 rounded border border-white/10">${t.direction === 'Short' ? 'S' : 'L'}</span>`;
                 const hasMedia = t.entryImage || t.exitImage, mediaBadge = hasMedia ? `<button onclick="window.viewImages(${t.id})" class="text-gray-400 hover:text-white transition-all hover:scale-110 p-1" title="查看视觉证据">📷</button>` : `<span class="text-white/10 text-xs">--</span>`;
 
@@ -1120,7 +1174,7 @@
         window.editExit = function(id) {
             const t = trades.find(tr => tr.id === id); if (!t) return;
             document.getElementById('edit-exit-id').value = t.id; document.getElementById('close-info-header').innerHTML = `<div><span class="text-primary font-bold mr-2">${t.symbol}</span> <span>${t.date} ${t.entryTime}</span></div><div>Strategy: <span class="text-white">${(t.strategies||[]).join(', ')}</span></div>`; document.getElementById('exit-time').value = t.exitTime || ''; document.getElementById('exit-ticks').value = t.actualTicks || 0;
-            const initUsd = t.actualUsd !== undefined ? t.actualUsd : ((t.actualTicks || 0) * (UNITS[t.symbol]||5)), usdEl = document.getElementById('exit-usd'); usdEl.value = initUsd.toFixed(2); usdEl.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold ${initUsd>=0?'text-success':'text-danger'}`;
+            const initUsd = t.actualUsd !== undefined ? t.actualUsd : ((t.actualTicks || 0) * (UNITS[t.symbol]||5)), usdEl = document.getElementById('exit-usd'); usdEl.value = initUsd.toFixed(2); usdEl.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold ${initUsd>0?'text-success':(initUsd<0?'text-danger':'text-gray-400')}`;
             document.getElementById('trade-notes').value = t.notes || ''; window.currentForm.exitMoods = [...(t.exitMood || t.moods || [])]; window.renderSelectedTags('exitMood'); window.updateExitCalc();
             if (t.exitImage) { showImagePreview('exit', t.exitImage); window.tempExitImage = null; } else { document.getElementById('exit-dropzone').classList.remove('has-image'); document.getElementById('exit-preview').src = ''; }
             document.getElementById('close-modal').classList.remove('hidden'); document.getElementById('close-modal').classList.add('flex');
@@ -1130,13 +1184,31 @@
         window.updateSelectedCount = function() { const selected = document.querySelectorAll('.trade-checkbox:checked').length, btn = document.getElementById('batch-delete-btn'); if (selected > 0) { btn.classList.remove('hidden'); document.getElementById('selected-count').innerText = selected; } else { btn.classList.add('hidden'); document.getElementById('select-all-trades').checked = false; } };
         window.deleteSelectedTrades = async function() { const checkboxes = document.querySelectorAll('.trade-checkbox:checked'), idsToDelete = Array.from(checkboxes).map(cb => cb.value), confirmed = await Dialog.show({ title: '批量删除', message: `确认云端永久删除这 ${idsToDelete.length} 条记录吗？\n附带的截图也会一并销毁。`, type: 'confirm' }); if (confirmed) { idsToDelete.forEach(id => { const t = trades.find(tr => tr.id == id); if(t) window.deleteTradeFromCloud(t); }); document.getElementById('select-all-trades').checked = false; } };
         window.deleteTrade = async function(id) { const t = trades.find(tr => tr.id === id); if(!t) return; const confirmed = await Dialog.show({ title: '删除记录', message: '确定云端永久删除这条记录及其截图吗？', type: 'confirm' }); if (confirmed) { window.deleteTradeFromCloud(t); } };
-        window.showDayDetail = function(date) { const dt = window.getFilteredTrades().filter(t => t.date === date && t.status === 'closed'); if(!dt.length) return; document.getElementById('day-detail-modal').classList.remove('hidden'); document.getElementById('day-detail-modal').classList.add('flex'); document.getElementById('day-modal-title').innerText = `Log: ${date}`; document.getElementById('day-modal-content').innerHTML = dt.map(t => `<div class="p-3 bg-white/5 rounded border border-white/10 flex justify-between items-center"><div><div class="text-sm font-bold text-white">${t.symbol} <span class="text-gray-500 text-xs font-mono ml-2">${t.entryTime} - ${t.exitTime}</span></div><div class="text-[9px] text-gray-500 mt-1">${(t.accounts||[])[0]}</div></div><div class="text-sm font-bold ${window.getPnL(t, currentUnit)>=0?'text-success':'text-danger'}">${window.getPnL(t, currentUnit)}${currentUnit==='usd'?'$':'t'}</div></div>`).join(''); };
+        window.showDayDetail = function(date) { const dt = window.getFilteredTrades().filter(t => t.date === date && t.status === 'closed'); if(!dt.length) return; document.getElementById('day-detail-modal').classList.remove('hidden'); document.getElementById('day-detail-modal').classList.add('flex'); document.getElementById('day-modal-title').innerText = `Log: ${date}`; document.getElementById('day-modal-content').innerHTML = dt.map(t => `<div class="p-3 bg-white/5 rounded border border-white/10 flex justify-between items-center"><div><div class="text-sm font-bold text-white">${t.symbol} <span class="text-gray-500 text-xs font-mono ml-2">${t.entryTime} - ${t.exitTime}</span></div><div class="text-[9px] text-gray-500 mt-1">${(t.accounts||[])[0]}</div></div><div class="text-sm font-bold ${window.getPnL(t, currentUnit)>0?'text-success':(window.getPnL(t, currentUnit)<0?'text-danger':'text-gray-400')}">${window.getPnL(t, currentUnit)}${currentUnit==='usd'?'$':'t'}</div></div>`).join(''); };
         window.closeDayModal = function() { document.getElementById('day-detail-modal').classList.add('hidden'); document.getElementById('day-detail-modal').classList.remove('flex'); };
         
         window.openEntryModal = function() { document.getElementById('trade-date').valueAsDate = new Date(); document.getElementById('entry-time').value = new Date().toTimeString().slice(0,5); window.updateEntryCalc(); document.getElementById('entry-modal').classList.remove('hidden'); document.getElementById('entry-modal').classList.add('flex'); };
         window.closeEntryModal = function() { document.getElementById('entry-modal').classList.add('hidden'); document.getElementById('entry-modal').classList.remove('flex'); document.getElementById('entry-form').reset(); document.getElementById('edit-trade-id').value = ''; window.currentForm = { accounts: [], signals: [], strategies: [], moods: [], exitMoods: [], locations: [], contexts: [], entryModes: [], compliance: {} }; Object.keys(typeToPlural).forEach(window.renderSelectedTags); window.tempEntryImage = null; document.getElementById('entry-dropzone').classList.remove('has-image'); document.getElementById('entry-preview').src = ''; document.getElementById('entry-file-input').value = ''; };
         window.openExitModal = function(activeTrade) { if(!activeTrade) return; document.getElementById('close-info-header').innerHTML = `<div><span class="text-primary font-bold mr-2">${activeTrade.symbol}</span> <span>${activeTrade.date} ${activeTrade.entryTime}</span></div><div>Strategy: <span class="text-white">${activeTrade.strategies.join(', ')}</span></div>`; document.getElementById('exit-time').value = new Date().toTimeString().slice(0,5); document.getElementById('close-modal').classList.remove('hidden'); document.getElementById('close-modal').classList.add('flex'); };
-        window.closeExitModal = function() { document.getElementById('close-modal').classList.add('hidden'); document.getElementById('close-modal').classList.remove('flex'); document.getElementById('close-form').reset(); const usdEl = document.getElementById('exit-usd'); usdEl.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold`; document.getElementById('edit-exit-id').value = ''; window.currentForm.exitMoods = []; window.renderSelectedTags('exitMood'); window.tempExitImage = null; document.getElementById('exit-dropzone').classList.remove('has-image'); document.getElementById('exit-preview').src = ''; document.getElementById('exit-file-input').value = ''; };
+        
+        window.closeExitModal = function() { 
+            document.getElementById('close-modal').classList.add('hidden'); 
+            document.getElementById('close-modal').classList.remove('flex'); 
+            document.getElementById('close-form').reset(); 
+            const usdEl = document.getElementById('exit-usd'); 
+            usdEl.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold`; 
+            document.getElementById('edit-exit-id').value = ''; 
+            window.currentForm.exitMoods = []; 
+            window.renderSelectedTags('exitMood'); 
+            window.tempExitImage = null; 
+            document.getElementById('exit-dropzone').classList.remove('has-image'); 
+            document.getElementById('exit-preview').src = ''; 
+            document.getElementById('exit-file-input').value = ''; 
+            if(document.getElementById('in-be')){ 
+                document.getElementById('in-be').checked = false; 
+                window.toggleBE(false); 
+            } 
+        };
 
         // >>> 以下是补充的 Settings 及数据相关函数 <<<
         window.renderSettings = function() {
@@ -1150,11 +1222,11 @@
         window.updateConfig = function(key, val) { config[key] = parseFloat(val) || 0; window.saveConfigToCloud(); };
         
         window.resetData = async function() { 
-            if (confirm("⚠️ 确定清空云端所有数据吗？这将永久删除您的所有文字和截图记录！")) { 
+            if (confirm("⚠️ 确定清空所有数据吗？这将永久删除您的所有文字和截图记录！")) { 
                 if(!currentUser) return;
                 for (const t of trades) await window.deleteTradeFromCloud(t);
                 config = { initialBalances: {}, maxConsecutiveLosses: 3, haltCooldownMinutes: 60 }; window.saveConfigToCloud();
-                tagPool = defaultTags; window.saveTagPoolToCloud();
+                tagPool = JSON.parse(JSON.stringify(defaultTags)); window.saveTagPoolToCloud();
             } 
         };
         
@@ -1169,7 +1241,7 @@
             reader.onload = async e => { 
                 try { 
                     const data = JSON.parse(e.target.result); 
-                    if (data.trades && currentUser) { 
+                    if (data.trades) { 
                         for(const t of data.trades) await window.saveTradeToCloud(t);
                         if(data.config) { config = data.config; await window.saveConfigToCloud(); }
                         if(data.tagPool) { tagPool = data.tagPool; await window.saveTagPoolToCloud(); }
@@ -1184,4 +1256,3 @@
     </script>
 </body>
 </html>
- 
