@@ -27,24 +27,8 @@
         }
     </script>
     <style>
-        /* 绝对数学计算布局，防止 Flex 缩放 Bug */
-        html, body {
-            width: 100vw;
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #000000;
-        }
-        
-        .glass-card {
-            background: rgba(28, 28, 30, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 1rem;
-            transition: all 0.3s ease;
-        }
+        html, body { width: 100vw; height: 100vh; margin: 0; padding: 0; overflow: hidden; background-color: #000000; }
+        .glass-card { background: rgba(28, 28, 30, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1rem; transition: all 0.3s ease; }
         .glass-card:hover { border-color: rgba(255, 255, 255, 0.15); background: rgba(28, 28, 30, 0.85); }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
@@ -52,53 +36,23 @@
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         input[type="date"]::-webkit-calendar-picker-indicator, input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
-
-        .tag-input-container {
-            display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; min-height: 42px;
-            background: rgba(44, 44, 46, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.5rem; align-items: center;
-        }
+        .tag-input-container { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; min-height: 42px; background: rgba(44, 44, 46, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.5rem; align-items: center; }
         .tag-input-container:focus-within { border-color: #3b82f6; }
-        .tag-badge {
-            display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px;
-            background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-        .dropdown-menu {
-            position: absolute; top: 105%; left: 0; right: 0; background: #1c1c1e; border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0.6rem; box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.8); z-index: 100; max-height: 220px; overflow-y: auto;
-        }
-        .bulk-checkbox {
-            appearance: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 4px; cursor: pointer; position: relative; transition: all 0.2s;
-        }
+        .tag-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .dropdown-menu { position: absolute; top: 105%; left: 0; right: 0; background: #1c1c1e; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.6rem; box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.8); z-index: 100; max-height: 220px; overflow-y: auto; }
+        .bulk-checkbox { appearance: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer; position: relative; transition: all 0.2s; }
         .bulk-checkbox:checked { background: #3b82f6; border-color: #3b82f6; }
-        .bulk-checkbox:checked::after {
-            content: '✓'; color: white; position: absolute; font-size: 10px; font-weight: bold; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        }
-        .halt-overlay {
-            position: fixed; inset: 0; z-index: 9999; background: rgba(127, 29, 29, 0.95);
-            backdrop-filter: blur(16px); display: none; flex-direction: column; align-items: center; justify-content: center;
-        }
-        
-        /* 截图粘贴区样式 */
-        .dropzone {
-            border: 2px dashed rgba(255, 255, 255, 0.2); border-radius: 0.75rem; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            position: relative; overflow: hidden; background: rgba(0,0,0,0.3); transition: all 0.2s;
-            min-height: 140px; cursor: pointer;
-        }
+        .bulk-checkbox:checked::after { content: '✓'; color: white; position: absolute; font-size: 10px; font-weight: bold; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .dropzone { border: 2px dashed rgba(255, 255, 255, 0.2); border-radius: 0.75rem; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; background: rgba(0,0,0,0.3); transition: all 0.2s; cursor: pointer; min-height: 110px; }
         .dropzone:hover, .dropzone.dragover { border-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
         .dropzone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; z-index: 10; display: none; }
         .dropzone.has-image img { display: block; }
         .dropzone.has-image .placeholder-text { opacity: 0; }
-        .remove-img-btn {
-            position: absolute; top: 8px; right: 8px; background: rgba(239, 68, 68, 0.9); color: white; 
-            width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-            font-size: 12px; z-index: 20; cursor: pointer; display: none;
-        }
+        .remove-img-btn { position: absolute; top: 8px; right: 8px; background: rgba(239, 68, 68, 0.9); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; z-index: 20; cursor: pointer; display: none; }
         .dropzone.has-image .remove-img-btn { display: flex; }
     </style>
 </head>
-<body class="bg-base text-gray-200 overflow-hidden flex m-0 p-0 relative" style="width: 100vw; height: 100vh;">
+<body class="bg-base text-gray-200 overflow-hidden flex flex-col m-0 p-0 relative" style="width: 100vw; height: 100vh;">
 
     <!-- 登录注册浮层 -->
     <div id="auth-overlay" class="fixed inset-0 bg-base z-[10000] flex flex-col items-center justify-center p-4">
@@ -138,204 +92,240 @@
         </div>
     </div>
 
-    <!-- 侧边导航 -->
-    <aside class="border-r border-white/5 flex flex-col items-center py-6 space-y-8 z-10 shrink-0 bg-base" style="width: 80px; min-width: 80px;">
-        <div class="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center text-primary font-bold shadow-[0_0_15px_rgba(59,130,246,0.3)] cursor-pointer" onclick="location.reload()">TA</div>
-        <nav class="flex flex-col space-y-4 flex-1 text-gray-500 w-full px-2 text-center">
-            <button onclick="switchView('view-dashboard', this)" class="nav-btn active p-3 hover:text-primary transition-all flex justify-center" title="Dashboard">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-            </button>
-            <button onclick="switchView('view-analytics', this)" class="nav-btn p-3 hover:text-primary transition-all flex justify-center" title="Analytics">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-            </button>
-            <button onclick="switchView('view-history', this)" class="nav-btn p-3 hover:text-primary transition-all flex justify-center" title="History">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </button>
-            <button onclick="switchView('view-settings', this)" class="nav-btn p-3 hover:text-primary transition-all flex justify-center" title="Settings">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
-            </button>
-        </nav>
-        <button onclick="window.logoutUser()" class="mt-auto mb-4 text-gray-500 hover:text-danger p-3 transition-colors" title="Logout">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-        </button>
-    </aside>
-
-    <!-- 主体区域 -->
-    <main class="flex flex-col p-6 overflow-hidden relative bg-base" style="width: calc(100vw - 80px); min-width: calc(100vw - 80px);">
-        <header class="flex justify-between items-center mb-6 shrink-0" style="width: 100%;">
-            <div class="flex space-x-3 items-center">
-                <div id="cloud-status" class="flex items-center space-x-2 text-[10px] font-bold text-gray-500 bg-white/5 px-3 py-2 rounded-lg border border-white/10">
-                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <span>Connecting Cloud...</span>
-                </div>
-                <select id="unit-filter" class="bg-white/5 border border-white/10 text-sm rounded-lg px-3 py-2 outline-none focus:border-primary" onchange="refreshDashboard()">
-                    <option value="tick">全局单位: Ticks</option>
-                    <option value="usd">全局单位: USD</option>
-                </select>
-                <select id="global-account-filter" class="bg-primary/10 text-primary font-bold border border-primary/20 text-sm rounded-lg px-3 py-2 outline-none focus:border-primary" onchange="refreshDashboard()">
-                    <option value="ALL">所有账号 (All Accounts)</option>
-                </select>
+    <!-- 全局熔断横幅 -->
+    <div id="halt-banner" class="hidden bg-danger text-white px-6 py-3 justify-between items-center w-full shadow-[0_10px_30px_rgba(239,68,68,0.3)] shrink-0 z-50">
+        <div class="flex items-center space-x-4">
+            <span class="text-3xl animate-pulse">🚫</span>
+            <div>
+                <div class="font-black tracking-widest text-lg shadow-black drop-shadow-md">SYSTEM HALTED</div>
+                <div class="text-xs text-red-200 mt-0.5 font-medium">最大连损额度触发，请立即离开屏幕。复仇交易只会摧毁账户。</div>
             </div>
-            <button id="main-logger-btn" onclick="toggleMainModal()" class="bg-primary hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-bold shadow-lg flex items-center transition-all hover:scale-105 active:scale-95">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                <span>+ Trade Logger</span>
-            </button>
-        </header>
-
-        <div class="overflow-y-auto pr-2 flex-1 pb-10" style="width: 100%;">
-            
-            <!-- Dashboard View -->
-            <div id="view-dashboard-components" class="space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="dashboard-cards"></div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="glass-card p-6 min-h-[300px] flex flex-col relative overflow-hidden">
-                        <h2 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-widest shrink-0">Equity Curve (资金曲线)</h2>
-                        <div class="w-full flex-1 relative min-h-0"><canvas id="balanceLineChart"></canvas></div>
-                    </div>
-                    <div class="glass-card p-6 min-h-[300px] flex flex-col relative overflow-hidden">
-                        <div class="flex justify-between items-center mb-4 shrink-0">
-                            <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">Net Daily P&L</h2>
-                        </div>
-                        <div class="w-full flex-1 relative min-h-0"><canvas id="dailyPnlBarChart"></canvas></div>
-                    </div>
-                </div>
-            </div>
-            
-            <section id="view-dashboard" class="view-section animate-fade-in block mt-6">
-                <div class="glass-card p-6">
-                    <div id="calendar-header" class="flex justify-between items-center mb-6 border-b border-white/10 pb-4"></div>
-                    <div id="calendar-grid"></div>
-                </div>
-            </section>
-            
-            <!-- History View -->
-            <section id="view-history" class="view-section hidden animate-fade-in">
-                <div class="glass-card p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-lg font-bold text-primary font-mono tracking-widest uppercase text-white">Trade History</h2>
-                        <button id="batch-delete-btn" onclick="deleteSelectedTrades()" class="hidden bg-danger hover:bg-red-600 text-white text-[11px] px-4 py-1.5 rounded-lg font-bold shadow-lg transition-all animate-fade-in">
-                            批量删除选中 (<span id="selected-count">0</span>)
-                        </button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm text-gray-400">
-                            <thead class="border-b border-white/10 text-gray-500 uppercase text-[10px] font-bold">
-                                <tr>
-                                    <th class="py-3 px-4 w-10"><input type="checkbox" id="select-all-trades" onclick="toggleAllTrades(this.checked)" class="bulk-checkbox"></th>
-                                    <th class="py-3 px-4">Date / Time</th>
-                                    <th class="py-3 px-4">Symbol / Account</th>
-                                    <th class="py-3 px-4">Confluences</th>
-                                    <th class="py-3 px-4 text-center">Media</th>
-                                    <th class="py-3 px-4 text-right font-mono">PnL</th>
-                                    <th class="py-3 px-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="history-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Analytics View -->
-            <section id="view-analytics" class="view-section hidden animate-fade-in flex flex-col space-y-6">
-                <div class="mb-2 border-b border-white/10 pb-4">
-                    <h1 class="text-2xl font-black text-white tracking-widest uppercase">Performance Analytics</h1>
-                    <p class="text-xs text-gray-500 mt-1">全维度交易绩效与边缘优势剖析</p>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                    <div class="glass-card p-6 flex flex-col h-[320px] lg:col-span-2">
-                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-primary rounded-full mr-3 shadow-[0_0_8px_#3b82f6]"></span>Trader DNA Radar</h2>
-                        <div class="relative w-full flex-1 min-h-0"><canvas id="radarChart"></canvas></div>
-                    </div>
-                    <div class="glass-card p-6 flex flex-col h-[320px] lg:col-span-3">
-                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-primary rounded-full mr-3 shadow-[0_0_8px_#3b82f6]"></span>Time Edge (时段表现)</h2>
-                        <div class="relative w-full flex-1 min-h-0"><canvas id="timeEdgeBarChart"></canvas></div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-                    <div class="glass-card p-6 flex flex-col h-[320px]">
-                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Strategy PnL Race</h2>
-                        <div class="relative w-full flex-1 min-h-0"><canvas id="strategyBarChart"></canvas></div>
-                    </div>
-                    <div class="glass-card p-6 flex flex-col h-[320px]">
-                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Mood Edge (情绪期望)</h2>
-                        <div class="relative w-full flex-1 min-h-0"><canvas id="moodBarChart"></canvas></div>
-                    </div>
-                    <div class="glass-card p-6 flex flex-col h-[320px]">
-                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Context Edge (环境表现)</h2>
-                        <div class="relative w-full flex-1 min-h-0"><canvas id="contextEdgeBarChart"></canvas></div>
-                    </div>
-                    <div class="glass-card p-6 flex flex-col h-[320px]">
-                        <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Direction Edge (多空表现)</h2>
-                        <div class="relative w-full flex-1 min-h-0"><canvas id="directionBarChart"></canvas></div>
-                    </div>
-                </div>
-                <div class="glass-card p-8 shadow-xl mt-2">
-                    <h2 class="text-lg font-bold text-white uppercase mb-8 tracking-widest text-center border-b border-white/10 pb-4">Global Pattern Discovery (跨维形态发现)</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div class="w-full">
-                            <h3 class="text-success font-bold mb-6 flex items-center text-lg"><span class="w-3 h-3 bg-success rounded-full mr-3 shadow-[0_0_12px_#10b981]"></span> The Holy Grail (最佳印钞形态)</h3>
-                            <div id="top-edges-container" class="space-y-4"></div>
-                        </div>
-                        <div class="w-full">
-                            <h3 class="text-danger font-bold mb-6 flex items-center text-lg"><span class="w-3 h-3 bg-danger rounded-full mr-3 shadow-[0_0_12px_#ef4444]"></span> The Account Bleeder (最强绞肉形态)</h3>
-                            <div id="top-leaks-container" class="space-y-4"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-8 pt-8 border-t border-white/10">
-                    <div class="flex justify-between items-end mb-8 pb-4">
-                        <div>
-                            <h2 class="text-xl font-black text-white tracking-widest uppercase">Strategy Drill-down</h2>
-                            <p class="text-xs text-gray-500 mt-1">单策略多维矩阵深度剖析</p>
-                        </div>
-                    </div>
-                    <div id="analytics-strategy-cards" class="space-y-10"></div>
-                </div>
-            </section>
-
-            <!-- Settings -->
-            <section id="view-settings" class="view-section hidden animate-fade-in">
-                <div class="glass-card p-6 flex flex-col space-y-10">
-                    <div>
-                        <h2 class="text-lg font-bold mb-4 text-primary tracking-widest uppercase border-b border-white/5 pb-2">Account Initial Balance (起始资金配置)</h2>
-                        <p class="text-xs text-gray-500 mb-4">设定每个账户的起始余额，资金曲线将从真实净值开始绘制。</p>
-                        <div id="initial-balance-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold mb-4 text-primary tracking-widest uppercase border-b border-white/5 pb-2">Risk Management (熔断与风控)</h2>
-                        <div class="space-y-4">
-                            <div class="flex items-center space-x-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                                <div class="flex-1">
-                                    <div class="font-bold text-white text-sm">单日允许最大连损笔数</div>
-                                    <div class="text-xs text-gray-500 mt-1">超过此阈值将触发系统强制熔断机制</div>
-                                </div>
-                                <input type="number" id="max-consecutive-losses" class="bg-black/50 border border-white/10 rounded-lg px-4 py-2 w-24 text-center font-mono outline-none focus:border-danger text-danger font-bold" value="3" onchange="updateConfig('maxConsecutiveLosses', this.value)">
-                            </div>
-                            <div class="flex items-center space-x-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                                <div class="flex-1">
-                                    <div class="font-bold text-white text-sm">强制冷却时间设置 (分钟)</div>
-                                    <div class="text-xs text-gray-500 mt-1">熔断后，在此时间范围内系统将拦截新开单请求</div>
-                                </div>
-                                <input type="number" id="halt-cooldown-minutes" class="bg-black/50 border border-white/10 rounded-lg px-4 py-2 w-24 text-center font-mono outline-none focus:border-danger text-danger font-bold" value="60" onchange="updateConfig('haltCooldownMinutes', this.value)">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="pt-6 border-t border-white/5 flex flex-wrap gap-4">
-                        <button onclick="exportData()" class="bg-primary/10 text-primary border border-primary/30 px-6 py-2 rounded-lg hover:bg-primary/20 transition-all font-bold text-sm">导出备份 (JSON)</button>
-                        <button onclick="document.getElementById('import-file').click()" class="bg-warning/10 text-warning border border-warning/30 px-6 py-2 rounded-lg hover:bg-warning/20 transition-all font-bold text-sm">导入恢复</button>
-                        <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(this)">
-                        <button onclick="resetData()" class="bg-danger/10 text-danger border border-danger/30 px-6 py-2 rounded-lg hover:bg-danger/20 transition-all font-bold text-sm ml-auto">清空数据</button>
-                    </div>
-                </div>
-            </section>
         </div>
-    </main>
+        <div class="flex items-center space-x-6">
+            <div id="halt-timer-banner" class="font-mono text-3xl font-bold bg-black/30 px-4 py-1 rounded-lg">60:00</div>
+            <button id="halt-unlock-btn" onclick="window.unlockHalt()" class="hidden bg-white/20 hover:bg-white/30 text-white font-bold text-sm px-4 py-2 rounded-lg transition-all active:scale-95 border border-white/30">承认错误并解封</button>
+        </div>
+    </div>
+
+    <!-- 强警告熔断弹窗 (Halt Shock Modal) -->
+    <div id="halt-modal" class="fixed inset-0 bg-black/95 z-[100000] hidden flex-col items-center justify-center p-4 backdrop-blur-lg">
+        <div id="halt-content" class="text-center p-8 max-w-2xl transition-all duration-300 transform scale-95 opacity-0">
+            <div class="text-7xl mb-6 animate-bounce">🚨</div>
+            <h1 class="text-6xl font-black text-danger mb-4 uppercase tracking-tighter shadow-black drop-shadow-2xl">SYSTEM HALTED</h1>
+            <p class="text-red-200 text-2xl mb-8 leading-relaxed font-bold">
+                您已连续触发最大连损额度！<br>
+                情绪正在失控，请立即停止开仓操作。<br>
+                <span class="text-white text-lg font-normal">系统已强制锁定，点击确认后进入只读复盘模式。</span>
+            </p>
+            <div class="text-5xl font-mono font-bold text-white bg-danger/20 px-10 py-5 rounded-xl mb-10 inline-block border border-danger shadow-[0_0_30px_rgba(239,68,68,0.5)]" id="halt-modal-timer">60:00</div>
+            <br>
+            <button onclick="window.acknowledgeHalt()" class="bg-white text-danger px-10 py-4 rounded-xl font-black text-xl shadow-2xl hover:scale-105 active:scale-95 transition-all uppercase tracking-wider">我已冷静，接受惩罚</button>
+        </div>
+    </div>
+
+    <!-- 侧边栏与主界面包裹器 -->
+    <div class="flex flex-1 overflow-hidden w-full">
+        <!-- 侧边导航 -->
+        <aside class="border-r border-white/5 flex flex-col items-center py-6 space-y-8 z-10 shrink-0 bg-base" style="width: 80px; min-width: 80px;">
+            <div class="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center text-primary font-bold shadow-[0_0_15px_rgba(59,130,246,0.3)] cursor-pointer" onclick="location.reload()">TA</div>
+            <nav class="flex flex-col space-y-4 flex-1 text-gray-500 w-full px-2 text-center">
+                <button onclick="switchView('view-dashboard', this)" class="nav-btn active p-3 hover:text-primary transition-all flex justify-center" title="Dashboard">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                </button>
+                <button onclick="switchView('view-analytics', this)" class="nav-btn p-3 hover:text-primary transition-all flex justify-center" title="Analytics">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </button>
+                <button onclick="switchView('view-history', this)" class="nav-btn p-3 hover:text-primary transition-all flex justify-center" title="History">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
+                <button onclick="switchView('view-settings', this)" class="nav-btn p-3 hover:text-primary transition-all flex justify-center" title="Settings">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                </button>
+            </nav>
+            <button onclick="window.logoutUser()" class="mt-auto mb-4 text-gray-500 hover:text-danger p-3 transition-colors" title="Logout">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+        </aside>
+
+        <!-- 主体区域 -->
+        <main class="flex flex-col p-6 overflow-hidden relative bg-base w-full">
+            <header class="flex justify-between items-center mb-6 shrink-0 w-full">
+                <div class="flex space-x-3 items-center">
+                    <div id="cloud-status" class="flex items-center space-x-2 text-[10px] font-bold text-gray-500 bg-white/5 px-3 py-2 rounded-lg border border-white/10">
+                        <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <span>Connecting Cloud...</span>
+                    </div>
+                    <select id="unit-filter" class="bg-white/5 border border-white/10 text-sm rounded-lg px-3 py-2 outline-none focus:border-primary" onchange="refreshDashboard()">
+                        <option value="tick">全局单位: Ticks</option>
+                        <option value="usd">全局单位: USD</option>
+                    </select>
+                    <select id="global-account-filter" class="bg-primary/10 text-primary font-bold border border-primary/20 text-sm rounded-lg px-3 py-2 outline-none focus:border-primary" onchange="refreshDashboard()">
+                        <option value="ALL">所有账号 (All Accounts)</option>
+                    </select>
+                </div>
+                <button id="main-logger-btn" onclick="toggleMainModal()" class="bg-primary hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-bold shadow-lg flex items-center transition-all hover:scale-105 active:scale-95">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    <span>+ Trade Logger</span>
+                </button>
+            </header>
+
+            <div class="overflow-y-auto pr-2 flex-1 pb-10 w-full">
+                
+                <!-- Dashboard View -->
+                <div id="view-dashboard-components" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="dashboard-cards"></div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass-card p-6 min-h-[300px] flex flex-col relative overflow-hidden">
+                            <h2 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-widest shrink-0">Equity Curve (资金曲线)</h2>
+                            <div class="w-full flex-1 relative min-h-0"><canvas id="balanceLineChart"></canvas></div>
+                        </div>
+                        <div class="glass-card p-6 min-h-[300px] flex flex-col relative overflow-hidden">
+                            <div class="flex justify-between items-center mb-4 shrink-0">
+                                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">Net Daily P&L</h2>
+                            </div>
+                            <div class="w-full flex-1 relative min-h-0"><canvas id="dailyPnlBarChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <section id="view-dashboard" class="view-section animate-fade-in block mt-6">
+                    <div class="glass-card p-6">
+                        <div id="calendar-header" class="flex justify-between items-center mb-6 border-b border-white/10 pb-4"></div>
+                        <div id="calendar-grid"></div>
+                    </div>
+                </section>
+                
+                <!-- History View -->
+                <section id="view-history" class="view-section hidden animate-fade-in">
+                    <div class="glass-card p-6 flex flex-col">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-bold text-primary font-mono tracking-widest uppercase text-white">Trade History</h2>
+                            <button id="batch-delete-btn" onclick="deleteSelectedTrades()" class="hidden bg-danger hover:bg-red-600 text-white text-[11px] px-4 py-1.5 rounded-lg font-bold shadow-lg transition-all animate-fade-in">
+                                批量删除选中 (<span id="selected-count">0</span>)
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm text-gray-400">
+                                <thead class="border-b border-white/10 text-gray-500 uppercase text-[10px] font-bold">
+                                    <tr>
+                                        <th class="py-3 px-4 w-10"><input type="checkbox" id="select-all-trades" onclick="toggleAllTrades(this.checked)" class="bulk-checkbox"></th>
+                                        <th class="py-3 px-4">Date / Time</th>
+                                        <th class="py-3 px-4">Symbol / Account</th>
+                                        <th class="py-3 px-4">Confluences</th>
+                                        <th class="py-3 px-4 text-center">Media</th>
+                                        <th class="py-3 px-4 text-right font-mono">PnL</th>
+                                        <th class="py-3 px-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Analytics View -->
+                <section id="view-analytics" class="view-section hidden animate-fade-in flex flex-col space-y-6">
+                    <div class="mb-2 border-b border-white/10 pb-4">
+                        <h1 class="text-2xl font-black text-white tracking-widest uppercase">Performance Analytics</h1>
+                        <p class="text-xs text-gray-500 mt-1">全维度交易绩效与边缘优势剖析</p>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                        <div class="glass-card p-6 flex flex-col h-[320px] lg:col-span-2">
+                            <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-primary rounded-full mr-3 shadow-[0_0_8px_#3b82f6]"></span>Trader DNA Radar</h2>
+                            <div class="relative w-full flex-1 min-h-0"><canvas id="radarChart"></canvas></div>
+                        </div>
+                        <div class="glass-card p-6 flex flex-col h-[320px] lg:col-span-3">
+                            <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-primary rounded-full mr-3 shadow-[0_0_8px_#3b82f6]"></span>Time Edge (时段表现)</h2>
+                            <div class="relative w-full flex-1 min-h-0"><canvas id="timeEdgeBarChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+                        <div class="glass-card p-6 flex flex-col h-[320px]">
+                            <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Strategy PnL Race</h2>
+                            <div class="relative w-full flex-1 min-h-0"><canvas id="strategyBarChart"></canvas></div>
+                        </div>
+                        <div class="glass-card p-6 flex flex-col h-[320px]">
+                            <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Mood Edge (情绪期望)</h2>
+                            <div class="relative w-full flex-1 min-h-0"><canvas id="moodBarChart"></canvas></div>
+                        </div>
+                        <div class="glass-card p-6 flex flex-col h-[320px]">
+                            <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Context Edge (环境表现)</h2>
+                            <div class="relative w-full flex-1 min-h-0"><canvas id="contextEdgeBarChart"></canvas></div>
+                        </div>
+                        <div class="glass-card p-6 flex flex-col h-[320px]">
+                            <h2 class="text-sm font-bold text-gray-300 mb-6 uppercase tracking-widest flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_#6366f1]"></span>Direction Edge (多空表现)</h2>
+                            <div class="relative w-full flex-1 min-h-0"><canvas id="directionBarChart"></canvas></div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card p-8 shadow-xl mt-2">
+                        <h2 class="text-lg font-bold text-white uppercase mb-8 tracking-widest text-center border-b border-white/10 pb-4">Global Pattern Discovery (跨维形态发现)</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                            <div class="w-full">
+                                <h3 class="text-success font-bold mb-6 flex items-center text-lg"><span class="w-3 h-3 bg-success rounded-full mr-3 shadow-[0_0_12px_#10b981]"></span> The Holy Grail (最佳印钞形态)</h3>
+                                <div id="top-edges-container" class="space-y-4"></div>
+                            </div>
+                            <div class="w-full">
+                                <h3 class="text-danger font-bold mb-6 flex items-center text-lg"><span class="w-3 h-3 bg-danger rounded-full mr-3 shadow-[0_0_12px_#ef4444]"></span> The Account Bleeder (最强绞肉形态)</h3>
+                                <div id="top-leaks-container" class="space-y-4"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 pt-8 border-t border-white/10">
+                        <div class="flex justify-between items-end mb-8 pb-4">
+                            <div>
+                                <h2 class="text-xl font-black text-white tracking-widest uppercase">Strategy Drill-down</h2>
+                                <p class="text-xs text-gray-500 mt-1">单策略多维矩阵深度剖析</p>
+                            </div>
+                        </div>
+                        <div id="analytics-strategy-cards" class="space-y-10"></div>
+                    </div>
+                </section>
+
+                <!-- Settings -->
+                <section id="view-settings" class="view-section hidden animate-fade-in">
+                    <div class="glass-card p-6 flex flex-col space-y-10">
+                        <div>
+                            <h2 class="text-lg font-bold mb-4 text-primary tracking-widest uppercase border-b border-white/5 pb-2">Account Initial Balance (起始资金配置)</h2>
+                            <p class="text-xs text-gray-500 mb-4">设定每个账户的起始余额，资金曲线将从真实净值开始绘制。</p>
+                            <div id="initial-balance-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold mb-4 text-primary tracking-widest uppercase border-b border-white/5 pb-2">Risk Management (熔断与风控)</h2>
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                                    <div class="flex-1">
+                                        <div class="font-bold text-white text-sm">单日允许最大连损笔数</div>
+                                        <div class="text-xs text-gray-500 mt-1">超过此阈值将触发系统强制熔断机制</div>
+                                    </div>
+                                    <input type="number" id="max-consecutive-losses" class="bg-black/50 border border-white/10 rounded-lg px-4 py-2 w-24 text-center font-mono outline-none focus:border-danger text-danger font-bold" value="3" onchange="updateConfig('maxConsecutiveLosses', this.value)">
+                                </div>
+                                <div class="flex items-center space-x-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                                    <div class="flex-1">
+                                        <div class="font-bold text-white text-sm">强制冷却时间设置 (分钟)</div>
+                                        <div class="text-xs text-gray-500 mt-1">熔断后，在此时间范围内系统将拦截新开单请求</div>
+                                    </div>
+                                    <input type="number" id="halt-cooldown-minutes" class="bg-black/50 border border-white/10 rounded-lg px-4 py-2 w-24 text-center font-mono outline-none focus:border-danger text-danger font-bold" value="60" onchange="updateConfig('haltCooldownMinutes', this.value)">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pt-6 border-t border-white/5 flex flex-wrap gap-4">
+                            <button onclick="exportData()" class="bg-primary/10 text-primary border border-primary/30 px-6 py-2 rounded-lg hover:bg-primary/20 transition-all font-bold text-sm">导出备份 (JSON)</button>
+                            <button onclick="document.getElementById('import-file').click()" class="bg-warning/10 text-warning border border-warning/30 px-6 py-2 rounded-lg hover:bg-warning/20 transition-all font-bold text-sm">导入恢复</button>
+                            <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(this)">
+                            <button onclick="resetData()" class="bg-danger/10 text-danger border border-danger/30 px-6 py-2 rounded-lg hover:bg-danger/20 transition-all font-bold text-sm ml-auto">清空数据</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
 
     <!-- 阶段一：进场录入 Modal -->
-    <div id="entry-modal" class="fixed inset-0 bg-black/90 hidden z-50 items-center justify-center p-4">
-        <div class="glass-card w-full max-w-5xl p-8 bg-panel border-t-4 border-t-primary shadow-2xl overflow-y-auto max-h-[95vh] flex gap-6 flex-col lg:flex-row">
+    <div id="entry-modal" class="fixed inset-0 bg-black/90 hidden z-[60] items-center justify-center p-4">
+        <div class="glass-card w-full max-w-6xl p-8 bg-panel border-t-4 border-t-primary shadow-2xl overflow-y-auto max-h-[95vh] flex gap-6 flex-col lg:flex-row">
             
             <div class="flex-1 flex flex-col">
                 <div class="flex justify-between items-center mb-6">
@@ -353,7 +343,23 @@
                             <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Account</label>
                             <div class="tag-input-container !border-primary/50 !bg-primary/5"><div id="selected-accounts" class="flex flex-wrap gap-1"></div><input type="text" id="account-input" class="bg-transparent border-none outline-none text-sm w-full" placeholder="..." required></div><div id="account-dropdown" class="dropdown-menu hidden"></div>
                         </div>
-                        <div class="space-y-1"><label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Symbol</label><select id="symbol" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-primary" onchange="window.updateEntryCalc()"><option value="NQ">NQ ($5)</option><option value="ES">ES ($12.5)</option></select></div>
+                        
+                        <div class="space-y-1 relative">
+                            <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Symbol</label>
+                            <select id="symbol" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-primary" onchange="window.handleSymbolChange()">
+                                <option value="NQ">NQ ($5)</option>
+                                <option value="ES">ES ($12.5)</option>
+                                <option value="MNQ">MNQ ($0.5)</option>
+                                <option value="MES">MES ($1.25)</option>
+                                <option value="GC">GC ($10)</option>
+                                <option value="CUSTOM">CUSTOM...</option>
+                            </select>
+                            <div id="custom-symbol-container" class="hidden absolute top-[100%] left-0 right-0 mt-1 bg-panel border border-white/10 rounded-lg p-2 flex space-x-2 z-10 shadow-xl">
+                                <input type="text" id="custom-symbol-name" class="w-1/2 bg-black/50 border border-white/10 rounded px-2 py-1.5 text-xs outline-none focus:border-primary" placeholder="Name (e.g. YM)" oninput="window.updateEntryCalc()">
+                                <input type="number" id="custom-symbol-value" class="w-1/2 bg-black/50 border border-white/10 rounded px-2 py-1.5 text-xs outline-none focus:border-primary font-mono" placeholder="$/t (e.g. 5)" oninput="window.updateEntryCalc()">
+                            </div>
+                        </div>
+                        
                         <div class="space-y-1"><label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Direction</label><select id="direction" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-primary"><option value="Long">Long (做多)</option><option value="Short">Short (做空)</option></select></div>
                         <div class="space-y-1"><label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Date</label><input type="date" id="trade-date" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-primary" required></div>
                         <div class="space-y-1"><label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Entry Time</label><input type="time" id="entry-time" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-primary" required></div>
@@ -378,29 +384,67 @@
                     </div>
 
                     <div class="p-4 bg-base/50 rounded-lg border border-white/5 grid grid-cols-2 md:grid-cols-4 gap-4 shadow-inner">
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Risk(t)</label><input type="number" id="risk-ticks" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono" value="20" required oninput="window.updateEntryCalc()"></div>
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Risk($)</label><input type="number" id="risk-usd" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono text-warning" required></div>
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Target(t)</label><input type="number" id="target-ticks" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono" oninput="window.updateEntryCalc()"></div>
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Target($)</label><input type="number" id="target-usd" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono text-success"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Risk(t)</label><input type="number" id="risk-ticks" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono" placeholder="Ticks" required oninput="window.updateEntryCalc()"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Risk($)</label><input type="number" id="risk-usd" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono text-warning" placeholder="USD" required oninput="window.updateEntryCalc()"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Target(t)</label><input type="number" id="target-ticks" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono" placeholder="Ticks" oninput="window.handleTargetChange('ticks')"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Target($)</label><input type="number" id="target-usd" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono text-success" placeholder="USD" oninput="window.handleTargetChange('usd')"></div>
                     </div>
                 </form>
             </div>
             
-            <!-- 入场截图专区 -->
-            <div class="w-full lg:w-[300px] flex flex-col shrink-0 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-6">
-                <div class="flex justify-between items-center mb-4 lg:hidden">
-                    <span class="text-sm font-bold text-gray-300">Visual Evidence (视觉证据)</span>
+            <!-- 计算器与视觉流边栏 -->
+            <div class="w-full lg:w-[320px] flex flex-col shrink-0 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-6 space-y-6">
+                <div class="flex justify-between items-center mb-1 lg:hidden">
+                    <span class="text-sm font-bold text-gray-300">Calculator & Visual</span>
                 </div>
-                <div class="flex-1 flex flex-col space-y-4">
+                
+                <!-- 动态手数计算器 -->
+                <div class="bg-white/5 border border-white/10 rounded-xl p-4 shadow-inner">
+                    <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center">
+                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 17h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg> 
+                        Position Calculator
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-500">Stop Ticks</span>
+                            <input type="number" id="calc-stop-ticks" class="w-20 bg-black/50 border border-white/10 rounded p-1 text-xs text-right outline-none focus:border-primary font-mono" oninput="window.syncCalcToMain('ticks')">
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-500">Risk ($)</span>
+                            <input type="number" id="calc-risk-usd" class="w-20 bg-black/50 border border-white/10 rounded p-1 text-xs text-right text-warning outline-none focus:border-primary font-mono" oninput="window.syncCalcToMain('usd')">
+                        </div>
+                        <div class="pt-3 border-t border-white/5 flex justify-between items-center">
+                            <span class="text-xs font-bold text-white">Suggested Lots</span>
+                            <span id="calc-suggested-lots" class="text-lg font-black text-primary font-mono">0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-1 flex flex-col space-y-4 overflow-y-auto pr-1 pb-2">
                     <div>
                         <label class="text-[10px] uppercase font-bold text-gray-400 block mb-2 flex items-center justify-between">
-                            <span>Entry Screenshot (入场截图)</span>
+                            <span>Analysis (逻辑大局观)</span>
+                            <span class="text-[9px] font-normal text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">Ctrl+V 粘贴</span>
+                        </label>
+                        <div id="analysis-dropzone" class="dropzone">
+                            <div class="placeholder-text text-center pointer-events-none">
+                                <svg class="w-6 h-6 text-gray-600 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <span class="text-[10px] text-gray-500">点击此处 Ctrl+V<br>上传逻辑图</span>
+                            </div>
+                            <img id="analysis-preview" src="" alt="Analysis Preview">
+                            <div class="remove-img-btn" onclick="removeImage('analysis', event)">✕</div>
+                            <input type="file" id="analysis-file-input" class="hidden" accept="image/*" onchange="handleFileInput(event, 'analysis')">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] uppercase font-bold text-gray-400 block mb-2 flex items-center justify-between">
+                            <span>Entry (精细入场点)</span>
                             <span class="text-[9px] font-normal text-primary bg-primary/10 px-1.5 py-0.5 rounded">Ctrl+V 粘贴</span>
                         </label>
-                        <div id="entry-dropzone" class="dropzone h-40">
+                        <div id="entry-dropzone" class="dropzone">
                             <div class="placeholder-text text-center pointer-events-none">
-                                <svg class="w-8 h-8 text-gray-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <span class="text-xs text-gray-500">点击此处 Ctrl+V 粘贴<br>或点击上传文件</span>
+                                <svg class="w-6 h-6 text-gray-600 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <span class="text-[10px] text-gray-500">点击此处 Ctrl+V<br>上传入场点</span>
                             </div>
                             <img id="entry-preview" src="" alt="Entry Preview">
                             <div class="remove-img-btn" onclick="removeImage('entry', event)">✕</div>
@@ -408,7 +452,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex justify-end space-x-4 pt-6 mt-auto">
+                <div class="flex justify-end space-x-4 pt-4 mt-auto border-t border-white/5">
                     <button type="button" onclick="closeEntryModal()" class="px-4 py-2 text-gray-500 hover:text-white font-medium transition-colors text-sm">取消</button>
                     <button type="button" id="entry-submit-btn" onclick="document.getElementById('entry-form').requestSubmit()" class="bg-primary hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-transform active:scale-95 flex items-center">入场开单</button>
                 </div>
@@ -449,7 +493,6 @@
                         </div>
                     </div>
 
-                    <!-- 【新增】一键 BE 选项 -->
                     <div class="flex items-center bg-white/5 p-4 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onclick="document.getElementById('in-be').click()">
                         <input type="checkbox" id="in-be" onchange="window.toggleBE(this.checked)" class="w-5 h-5 mr-3 accent-success cursor-pointer" onclick="event.stopPropagation()">
                         <label class="text-sm font-black text-white uppercase cursor-pointer flex-1 tracking-wider">Mark as Break-Even (BE)</label>
@@ -473,7 +516,7 @@
                 <div class="flex-1 flex flex-col space-y-4">
                     <div>
                         <label class="text-[10px] uppercase font-bold text-gray-400 block mb-2 flex items-center justify-between">
-                            <span>Exit Screenshot (出场截图)</span>
+                            <span>Exit Screenshot (出场复盘)</span>
                             <span class="text-[9px] font-normal text-success bg-success/10 px-1.5 py-0.5 rounded">Ctrl+V 粘贴</span>
                         </label>
                         <div id="exit-dropzone" class="dropzone h-40">
@@ -496,35 +539,27 @@
         </div>
     </div>
 
-    <!-- 视觉复盘灯箱 -->
+    <!-- 三栏视觉复盘灯箱 -->
     <div id="image-viewer-modal" class="fixed inset-0 bg-black/95 hidden z-[99999] items-center justify-center p-4">
         <button onclick="document.getElementById('image-viewer-modal').classList.add('hidden'); document.getElementById('image-viewer-modal').classList.remove('flex');" class="absolute top-4 right-6 text-white/50 hover:text-white text-3xl z-50">✕</button>
-        <div class="w-full max-w-7xl h-[90vh] flex flex-col">
+        <div class="w-full max-w-[95vw] h-[90vh] flex flex-col">
             <div id="viewer-header" class="text-center mb-4 shrink-0"></div>
             <div class="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
                 <div class="flex-1 flex flex-col relative bg-black/50 border border-white/10 rounded-xl overflow-hidden">
-                    <div class="absolute top-0 left-0 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-br-lg z-10">ENTRY (入场)</div>
+                    <div class="absolute top-0 left-0 bg-indigo-500 text-white text-[10px] font-bold px-3 py-1 rounded-br-lg z-10">ANALYSIS (逻辑大局观)</div>
+                    <img id="viewer-analysis-img" src="" class="w-full h-full object-contain p-2 hidden">
+                    <div id="viewer-analysis-none" class="flex-1 flex items-center justify-center text-gray-600 text-sm italic">未上传大局观</div>
+                </div>
+                <div class="flex-1 flex flex-col relative bg-black/50 border border-white/10 rounded-xl overflow-hidden">
+                    <div class="absolute top-0 left-0 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-br-lg z-10">ENTRY (精细入场点)</div>
                     <img id="viewer-entry-img" src="" class="w-full h-full object-contain p-2 hidden">
                     <div id="viewer-entry-none" class="flex-1 flex items-center justify-center text-gray-600 text-sm italic">未上传入场截图</div>
                 </div>
                 <div class="flex-1 flex flex-col relative bg-black/50 border border-white/10 rounded-xl overflow-hidden">
-                    <div class="absolute top-0 left-0 bg-success text-white text-[10px] font-bold px-3 py-1 rounded-br-lg z-10">EXIT (出场)</div>
+                    <div class="absolute top-0 left-0 bg-success text-white text-[10px] font-bold px-3 py-1 rounded-br-lg z-10">EXIT (离场复盘)</div>
                     <img id="viewer-exit-img" src="" class="w-full h-full object-contain p-2 hidden">
                     <div id="viewer-exit-none" class="flex-1 flex items-center justify-center text-gray-600 text-sm italic">未上传出场截图</div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 熔断冷却弹窗 -->
-    <div id="halt-modal" class="halt-overlay">
-        <div id="halt-content" class="text-center p-8 max-w-2xl transition-all duration-300">
-            <div class="text-6xl mb-6">🚫</div>
-            <h1 class="text-5xl font-black text-white mb-4 uppercase tracking-tighter shadow-black drop-shadow-lg">TRADING HALT</h1>
-            <p class="text-red-200 text-xl mb-8 leading-relaxed">系统检测到您已连续触发最大连损额度！<br>请立即停止操作。<br><span class="font-bold text-white">立刻离开屏幕，复仇交易只会摧毁你的账户！</span></p>
-            <div id="halt-timer" class="text-4xl font-mono font-bold text-white bg-black/50 px-8 py-4 rounded-full mb-8 inline-block border border-red-500/50">60:00</div>
-            <div>
-                <button onclick="dismissHalt()" id="halt-close-btn" class="hidden bg-white text-danger px-8 py-3 rounded-xl font-black shadow-2xl hover:scale-105 active:scale-95 transition-all uppercase">我已冷静，承认错误</button>
             </div>
         </div>
     </div>
@@ -533,7 +568,7 @@
     <div id="day-detail-modal" class="fixed inset-0 bg-black/80 hidden z-[80] items-center justify-center p-4"><div class="glass-card w-full max-w-xl p-6 relative"><button onclick="closeDayModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button><h2 id="day-modal-title" class="text-xl font-bold mb-4 text-white"></h2><div id="day-modal-content" class="space-y-3 overflow-y-auto max-h-[60vh] pr-2"></div></div></div>
     <div id="custom-dialog" class="fixed inset-0 bg-black/90 hidden z-[200] items-center justify-center p-4"><div class="glass-card w-full max-w-xs p-6"><h3 id="dialog-title" class="text-white font-bold mb-2"></h3><p id="dialog-message" class="text-xs text-gray-400 mb-4"></p><input type="text" id="dialog-input" class="w-full bg-black border border-white/10 rounded p-2 text-sm mb-4 hidden text-white outline-none focus:border-primary"><div class="flex justify-end space-x-3 mt-4"><button id="dialog-cancel" class="text-sm px-3 text-gray-400 hover:text-white transition-colors">取消</button><button id="dialog-confirm" class="text-sm px-4 bg-primary text-white rounded font-bold shadow-lg">确定</button></div></div></div>
 
-    <!-- Firebase SDK Modules -->
+    <!-- Firebase SDK Modules (Cloud Backend) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -556,7 +591,7 @@
         let currentUser = null;
         let isLoginMode = true;
 
-        const UNITS = { NQ: 5, ES: 12.5 };
+        const UNITS = { NQ: 5, ES: 12.5, GC: 10, MNQ: 0.5, MES: 1.25 };
         const typeToPlural = { 'account': 'accounts', 'context': 'contexts', 'location': 'locations', 'strategy': 'strategies', 'signal': 'signals', 'entryMode': 'entryModes', 'mood': 'moods', 'exitMood': 'exitMoods' };
 
         let currentUnit = 'tick';
@@ -570,11 +605,11 @@
             entryModes: ['Market (市价)', 'Limit (挂单)', 'Stop Limit'], complianceRules: ['遵循进场原则', '设定并坚守止损', '不超仓执行']
         };
 
-        // 恢复为默认配置（无模拟数据）
         let config = { initialBalances: {}, maxConsecutiveLosses: 3, haltCooldownMinutes: 60 };
         let tagPool = JSON.parse(JSON.stringify(defaultTags));
         let trades = [];
         
+        window.tempAnalysisImage = null;
         window.tempEntryImage = null;
         window.tempExitImage = null;
 
@@ -586,7 +621,7 @@
         window.getActiveTrade = () => trades.find(t => t.status === 'open');
 
         // ==========================================
-        // 1. Auth 鉴权逻辑
+        // 1. Auth 鉴权逻辑 (Cloud Version)
         // ==========================================
         onAuthStateChanged(auth, (user) => {
             const overlay = document.getElementById('auth-overlay');
@@ -597,9 +632,9 @@
                 overlay.classList.add('hidden');
                 status.innerHTML = `<svg class="w-3.5 h-3.5 text-success animate-pulse" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><span class="text-success">${user.email.split('@')[0]}</span>`;
                 setupFirestoreListeners(user.uid);
+                window.startHaltTimer(); // 检查是否有遗留的熔断锁定
             } else {
                 currentUser = null;
-                // 恢复正式版设置，强制弹窗要求登录
                 overlay.classList.remove('hidden');
                 status.innerHTML = `<span class="text-danger">Disconnected</span>`;
                 trades = []; 
@@ -628,7 +663,6 @@
 
             try {
                 await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
-
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
                 } else {
@@ -648,7 +682,7 @@
         window.logoutUser = async function() { if(confirm('确定要退出当前账号吗？')) await signOut(auth); };
 
         // ==========================================
-        // 2. 实时云端数据库监听
+        // 2. 实时云端数据库监听 (Cloud Version)
         // ==========================================
         function setupFirestoreListeners(uid) {
             onSnapshot(doc(db, 'artifacts', 'TradeArch', 'users', uid, 'config', 'main'), (docSnap) => {
@@ -663,7 +697,6 @@
 
             onSnapshot(collection(db, 'artifacts', 'TradeArch', 'users', uid, 'trades'), (snapshot) => {
                 trades = snapshot.docs.map(doc => doc.data());
-                // 保留：强力清洗历史中的 NaN 数据为 0，防止图表崩溃
                 trades = trades.map(t => ({ 
                     ...t, 
                     status: t.status || 'closed', 
@@ -677,13 +710,13 @@
             }, (error) => console.error(error));
         }
 
-        // 移除本地缓存逻辑，完全依赖云端
         window.saveTradeToCloud = async (trade) => { 
             if (currentUser) await setDoc(doc(db, 'artifacts', 'TradeArch', 'users', currentUser.uid, 'trades', String(trade.id)), trade); 
         };
         window.deleteTradeFromCloud = async (trade) => {
             if (!currentUser) return;
             await deleteDoc(doc(db, 'artifacts', 'TradeArch', 'users', currentUser.uid, 'trades', String(trade.id)));
+            try { if (trade.analysisImage) await deleteObject(ref(storage, trade.analysisImage)); } catch(e){}
             try { if (trade.entryImage) await deleteObject(ref(storage, trade.entryImage)); } catch(e){}
             try { if (trade.exitImage) await deleteObject(ref(storage, trade.exitImage)); } catch(e){}
         };
@@ -695,20 +728,29 @@
         };
 
         // ==========================================
-        // 3. 截图上传引擎
+        // 3. 截图云端上传引擎
         // ==========================================
         async function uploadImageToStorage(base64Str, tradeId, type) {
-            if (!currentUser) return base64Str; // 防御机制
+            if (!currentUser) return base64Str;
             const path = `artifacts/TradeArch/users/${currentUser.uid}/images/${tradeId}_${type}_${Date.now()}.png`;
             const storageRef = ref(storage, path);
             await uploadString(storageRef, base64Str, 'data_url');
             return await getDownloadURL(storageRef);
         }
 
+        // ==========================================
+        // 核心交互逻辑与截图引擎
+        // ==========================================
         window.addEventListener('paste', e => {
             const entryModal = document.getElementById('entry-modal');
             const exitModal = document.getElementById('close-modal');
-            if (!entryModal.classList.contains('hidden')) handlePasteEvent(e, 'entry');
+            if (!entryModal.classList.contains('hidden')) {
+                if (!window.tempAnalysisImage && !document.getElementById('analysis-dropzone').classList.contains('has-image')) {
+                    handlePasteEvent(e, 'analysis');
+                } else {
+                    handlePasteEvent(e, 'entry');
+                }
+            }
             else if (!exitModal.classList.contains('hidden')) handlePasteEvent(e, 'exit');
         });
 
@@ -720,7 +762,9 @@
                     const blob = item.getAsFile(); const reader = new FileReader();
                     reader.onload = function(event) {
                         const base64 = event.target.result;
-                        if (type === 'entry') window.tempEntryImage = base64; else window.tempExitImage = base64;
+                        if (type === 'analysis') window.tempAnalysisImage = base64;
+                        else if (type === 'entry') window.tempEntryImage = base64; 
+                        else window.tempExitImage = base64;
                         showImagePreview(type, base64);
                     };
                     reader.readAsDataURL(blob);
@@ -733,12 +777,15 @@
             const reader = new FileReader();
             reader.onload = function(event) {
                 const base64 = event.target.result;
-                if (type === 'entry') window.tempEntryImage = base64; else window.tempExitImage = base64;
+                if (type === 'analysis') window.tempAnalysisImage = base64;
+                else if (type === 'entry') window.tempEntryImage = base64; 
+                else window.tempExitImage = base64;
                 showImagePreview(type, base64);
             };
             reader.readAsDataURL(file);
         };
         
+        document.getElementById('analysis-dropzone').addEventListener('click', (e) => { if(e.target.className !== 'remove-img-btn') document.getElementById('analysis-file-input').click(); });
         document.getElementById('entry-dropzone').addEventListener('click', (e) => { if(e.target.className !== 'remove-img-btn') document.getElementById('entry-file-input').click(); });
         document.getElementById('exit-dropzone').addEventListener('click', (e) => { if(e.target.className !== 'remove-img-btn') document.getElementById('exit-file-input').click(); });
 
@@ -749,7 +796,9 @@
 
         window.removeImage = function(type, e) {
             e.stopPropagation();
-            if (type === 'entry') window.tempEntryImage = 'REMOVE'; else window.tempExitImage = 'REMOVE';
+            if (type === 'analysis') window.tempAnalysisImage = 'REMOVE';
+            else if (type === 'entry') window.tempEntryImage = 'REMOVE'; 
+            else window.tempExitImage = 'REMOVE';
             document.getElementById(`${type}-dropzone`).classList.remove('has-image');
             document.getElementById(`${type}-preview`).src = ''; document.getElementById(`${type}-file-input`).value = '';
         };
@@ -757,24 +806,52 @@
         window.viewImages = function(entryId) {
             const t = trades.find(tr => tr.id === entryId); if (!t) return;
             const modal = document.getElementById('image-viewer-modal'), header = document.getElementById('viewer-header');
-            const enImg = document.getElementById('viewer-entry-img'), exImg = document.getElementById('viewer-exit-img');
-            const enNone = document.getElementById('viewer-entry-none'), exNone = document.getElementById('viewer-exit-none');
+            const anImg = document.getElementById('viewer-analysis-img'), anNone = document.getElementById('viewer-analysis-none');
+            const enImg = document.getElementById('viewer-entry-img'), enNone = document.getElementById('viewer-entry-none');
+            const exImg = document.getElementById('viewer-exit-img'), exNone = document.getElementById('viewer-exit-none');
 
             header.innerHTML = `<h2 class="text-2xl font-bold text-white">${t.symbol} | ${t.date}</h2><p class="text-gray-400 mt-1">${(t.strategies||[]).join(', ')}</p>`;
+            
+            if (t.analysisImage) { anImg.src = t.analysisImage; anImg.classList.remove('hidden'); anNone.classList.add('hidden'); } else { anImg.classList.add('hidden'); anNone.classList.remove('hidden'); }
             if (t.entryImage) { enImg.src = t.entryImage; enImg.classList.remove('hidden'); enNone.classList.add('hidden'); } else { enImg.classList.add('hidden'); enNone.classList.remove('hidden'); }
             if (t.exitImage) { exImg.src = t.exitImage; exImg.classList.remove('hidden'); exNone.classList.add('hidden'); } else { exImg.classList.add('hidden'); exNone.classList.remove('hidden'); }
+            
             modal.classList.remove('hidden'); modal.classList.add('flex');
         };
 
         // ==========================================
-        // UI 及计算核心库
+        // 【升级】统一资金计算口径及品种动态
         // ==========================================
+        window.getCurrentTickValue = function() {
+            const sym = document.getElementById('symbol').value;
+            if (sym === 'CUSTOM') return parseFloat(document.getElementById('custom-symbol-value').value) || 1;
+            return UNITS[sym] || 1;
+        };
+        window.getCurrentSymbolName = function() {
+            const sym = document.getElementById('symbol').value;
+            if (sym === 'CUSTOM') return document.getElementById('custom-symbol-name').value.trim() || 'CUSTOM';
+            return sym;
+        };
+
+        window.getPnL = function(t, unit) { 
+            if (unit === 'usd') {
+                if (t.actualUsd !== undefined && t.actualUsd !== 0) return parseFloat(t.actualUsd);
+                if (t.actualTicks === 0) return 0; // Break-Even catch
+                return (parseFloat(t.actualTicks) || 0) * (t.tickValue || UNITS[t.symbol] || 1);
+            }
+            return parseFloat(t.actualTicks) || 0; 
+        };
+        window.getRisk = function(t, unit) { 
+            if (unit === 'usd') {
+                if (t.riskUsd !== undefined && t.riskUsd > 0) return parseFloat(t.riskUsd);
+                return (parseFloat(t.riskTicks) || 1) * (t.tickValue || UNITS[t.symbol] || 1);
+            }
+            return parseFloat(t.riskTicks) || 1; 
+        };
+
         function createSemiCircleGauge(percentage) { const r = 40, circ = Math.PI * r, off = circ - (Math.min(Math.abs(percentage), 100) / 100) * circ; return `<svg viewBox="0 0 100 50" class="w-full h-full overflow-visible"><path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#ef4444" stroke-width="12" stroke-linecap="butt"/><path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#10b981" stroke-width="12" stroke-linecap="butt" stroke-dasharray="${circ}" stroke-dashoffset="${off}" class="transition-all duration-1000 ease-out"/></svg>`; }
         function createDonutChart(percentage, color) { const r = 24, circ = 2 * Math.PI * r, off = circ - (Math.min(Math.abs(percentage), 100) / 100) * circ; return `<svg viewBox="0 0 60 60" class="w-full h-full transform -rotate-90 overflow-visible"><circle cx="30" cy="30" r="24" fill="none" stroke="#ef4444" stroke-width="8"/><circle cx="30" cy="30" r="24" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${off}" class="transition-all duration-1000 ease-out"/></svg>`; }
         function createTextDonut(percentage, color, textValue) { const r = 18, circ = 2 * Math.PI * r, absP = Math.min(Math.abs(percentage), 100), off = circ - (absP / 100) * circ; return `<div class="relative w-10 h-10 flex items-center justify-center shrink-0"><svg viewBox="0 0 44 44" class="absolute inset-0 w-full h-full transform -rotate-90"><circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${off}" class="transition-all duration-1000 ease-out"/></svg><span class="text-[9px] font-mono font-bold" style="color: ${color}">${textValue}</span></div>`; }
-
-        window.getPnL = function(t, unit) { return unit === 'usd' ? (t.actualUsd !== undefined ? t.actualUsd : (t.actualTicks * (UNITS[t.symbol] || 1))) : (t.actualTicks || 0); };
-        window.getRisk = function(t, unit) { return unit === 'usd' ? ((t.riskUsd !== undefined && t.riskUsd > 0) ? t.riskUsd : ((t.riskTicks || 1) * (UNITS[t.symbol] || 1))) : (t.riskTicks || 1); };
 
         window.calcStats = function(list) {
             const closedTrades = list.filter(t => t.status === 'closed');
@@ -800,10 +877,17 @@
             const entryTimeSafe = newTrade.entryTime || '00:00', newTradeTime = new Date(`${newTrade.date}T${entryTimeSafe}:00`).getTime();
             const sameDayClosed = trades.filter(t => t.status === 'closed' && t.date === newTrade.date && new Date(`${t.date}T${t.exitTime || '00:00'}:00`).getTime() <= newTradeTime).sort((a,b) => new Date(`${a.date}T${a.exitTime || '00:00'}:00`).getTime() - new Date(`${b.date}T${b.exitTime || '00:00'}:00`).getTime());
             if (!sameDayClosed.length) return false;
-            let consecutiveLosses = 0; for (let i = sameDayClosed.length - 1; i >= 0; i--) { if (sameDayClosed[i].actualTicks < 0) consecutiveLosses++; else break; }
+            let consecutiveLosses = 0; 
+            for (let i = sameDayClosed.length - 1; i >= 0; i--) { 
+                if (window.getPnL(sameDayClosed[i], 'tick') < 0) consecutiveLosses++; 
+                else break; 
+            }
             if (consecutiveLosses >= maxLosses) {
                 const diffMin = (newTradeTime - new Date(`${sameDayClosed[sameDayClosed.length - 1].date}T${sameDayClosed[sameDayClosed.length - 1].exitTime || '00:00'}:00`).getTime()) / 60000;
-                if (diffMin < cooldownMin && diffMin >= 0) { (tagPool.complianceRules||[]).forEach(r => newTrade.compliance[r] = false); return true; }
+                if (diffMin < cooldownMin && diffMin >= 0) { 
+                    (tagPool.complianceRules||[]).forEach(r => newTrade.compliance[r] = false); 
+                    return true; 
+                }
             }
             return false;
         };
@@ -811,21 +895,128 @@
         window.checkImmediateHalt = function(dateStr) {
             const sameDayClosed = trades.filter(t => t.status === 'closed' && t.date === dateStr).sort((a,b) => new Date(`${a.date}T${a.exitTime || '00:00'}:00`).getTime() - new Date(`${b.date}T${b.exitTime || '00:00'}:00`).getTime());
             if (!sameDayClosed.length) return false;
-            let consecutiveLosses = 0; for (let i = sameDayClosed.length - 1; i >= 0; i--) { if (sameDayClosed[i].actualTicks < 0) consecutiveLosses++; else break; }
+            let consecutiveLosses = 0; 
+            for (let i = sameDayClosed.length - 1; i >= 0; i--) { 
+                if (window.getPnL(sameDayClosed[i], 'tick') < 0) consecutiveLosses++; 
+                else break; 
+            }
             return consecutiveLosses >= (config.maxConsecutiveLosses || 3);
         };
 
+        window.triggerHalt = function() {
+            const cooldownMin = config.haltCooldownMinutes || 60; 
+            const unlockTime = Date.now() + cooldownMin * 60000;
+            localStorage.setItem('tradeArch_halt_until', unlockTime);
+            localStorage.setItem('tradeArch_halt_acknowledged', 'false'); // 核心：标记为未确认状态
+            window.startHaltTimer();
+            window.updateButtonState();
+        };
+
+        window.startHaltTimer = function() {
+            const unlockTime = parseInt(localStorage.getItem('tradeArch_halt_until'));
+            if (!unlockTime) return;
+            if (Date.now() >= unlockTime) { 
+                localStorage.removeItem('tradeArch_halt_until'); 
+                localStorage.removeItem('tradeArch_halt_acknowledged');
+                window.endHalt(); 
+                return; 
+            }
+            
+            const isAck = localStorage.getItem('tradeArch_halt_acknowledged') === 'true';
+
+            if (!isAck) {
+                // 显示全屏强警报弹窗
+                const modal = document.getElementById('halt-modal');
+                const content = document.getElementById('halt-content');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => {
+                    content.classList.remove('scale-95', 'opacity-0');
+                    content.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                document.getElementById('halt-banner').classList.add('hidden');
+                document.getElementById('halt-banner').classList.remove('flex');
+            } else {
+                // 已确认过，只显示静默顶栏横幅
+                document.getElementById('halt-modal').classList.add('hidden');
+                document.getElementById('halt-modal').classList.remove('flex');
+                document.getElementById('halt-banner').classList.remove('hidden');
+                document.getElementById('halt-banner').classList.add('flex');
+                document.getElementById('halt-unlock-btn').classList.add('hidden');
+            }
+
+            window.updateButtonState();
+
+            if (window.haltInterval) clearInterval(window.haltInterval);
+            window.haltInterval = setInterval(() => { 
+                const remain = parseInt(localStorage.getItem('tradeArch_halt_until')) - Date.now();
+                if (remain <= 0) {
+                    clearInterval(window.haltInterval);
+                    document.getElementById('halt-timer-banner').innerText = "00:00";
+                    if(document.getElementById('halt-modal-timer')) document.getElementById('halt-modal-timer').innerText = "00:00";
+                    document.getElementById('halt-unlock-btn').classList.remove('hidden');
+                } else {
+                    const totalSec = Math.floor(remain / 1000);
+                    const m = Math.floor(totalSec / 60), s = totalSec % 60;
+                    const timeStr = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                    document.getElementById('halt-timer-banner').innerText = timeStr; 
+                    if(document.getElementById('halt-modal-timer')) document.getElementById('halt-modal-timer').innerText = timeStr;
+                }
+            }, 1000);
+        };
+
+        window.acknowledgeHalt = function() {
+            localStorage.setItem('tradeArch_halt_acknowledged', 'true');
+            const content = document.getElementById('halt-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                document.getElementById('halt-modal').classList.add('hidden');
+                document.getElementById('halt-modal').classList.remove('flex');
+                document.getElementById('halt-banner').classList.remove('hidden');
+                document.getElementById('halt-banner').classList.add('flex');
+            }, 300);
+        };
+
+        window.endHalt = function() {
+            document.getElementById('halt-banner').classList.remove('flex');
+            document.getElementById('halt-banner').classList.add('hidden');
+            document.getElementById('halt-modal').classList.add('hidden');
+            document.getElementById('halt-modal').classList.remove('flex');
+            if (window.haltInterval) clearInterval(window.haltInterval);
+            window.updateButtonState();
+        };
+
+        window.unlockHalt = function() {
+            localStorage.removeItem('tradeArch_halt_until');
+            localStorage.removeItem('tradeArch_halt_acknowledged');
+            window.endHalt();
+        };
+
         window.updateButtonState = function() {
-            const active = window.getActiveTrade(), btn = document.getElementById('main-logger-btn');
-            if (active) { btn.className = "bg-success hover:bg-emerald-600 text-black px-5 py-2 rounded-lg font-bold shadow-lg flex items-center transition-all hover:scale-105 active:scale-95 animate-pulse"; btn.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span>✓ Close Trade</span>`; } 
-            else { btn.className = "bg-primary hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-bold shadow-lg flex items-center transition-all hover:scale-105 active:scale-95"; btn.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg><span>+ Trade Logger</span>`; }
+            const active = window.getActiveTrade();
+            const btn = document.getElementById('main-logger-btn');
+            const isHalted = !!localStorage.getItem('tradeArch_halt_until') && parseInt(localStorage.getItem('tradeArch_halt_until')) > Date.now();
+            
+            if (active) { 
+                btn.className = "bg-success hover:bg-emerald-600 text-black px-5 py-2 rounded-lg font-bold shadow-lg flex items-center transition-all hover:scale-105 active:scale-95 animate-pulse"; 
+                btn.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span>✓ Close Trade</span>`; 
+                btn.disabled = false;
+            } else { 
+                btn.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg><span>+ Trade Logger</span>`; 
+                if (isHalted) {
+                    btn.className = "bg-primary text-white px-5 py-2 rounded-lg font-bold shadow-lg flex items-center opacity-50 cursor-not-allowed grayscale"; 
+                    btn.disabled = true;
+                } else {
+                    btn.className = "bg-primary hover:bg-blue-600 text-white px-5 py-2 rounded-lg font-bold shadow-lg flex items-center transition-all hover:scale-105 active:scale-95"; 
+                    btn.disabled = false;
+                }
+            }
         };
 
         window.toggleMainModal = function() { const active = window.getActiveTrade(); if (active) window.openExitModal(active); else window.openEntryModal(); };
         window.getFilteredTrades = function() { const acc = document.getElementById('global-account-filter').value; return acc === 'ALL' ? trades : trades.filter(t => (t.accounts||[]).includes(acc)); };
 
-        // ========== DOM 渲染引擎 ==========
-        
         window.switchView = function(id, btn) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
             const dc = document.getElementById('view-dashboard-components'); if (dc) dc.classList.add('hidden');
@@ -837,19 +1028,8 @@
             if (id === 'view-analytics') { requestAnimationFrame(() => { setTimeout(() => window.renderAnalytics(), 50); }); }
         };
 
-        window.triggerHalt = function() {
-            document.getElementById('halt-modal').style.display = 'flex';
-            const contentEl = document.getElementById('halt-content'); contentEl.classList.add('animate-bounce'); setTimeout(() => contentEl.classList.remove('animate-bounce'), 3000);
-            const cooldownMin = config.haltCooldownMinutes || 60; let timeLeft = cooldownMin * 60;
-            const timerEl = document.getElementById('halt-timer'); const btnEl = document.getElementById('halt-close-btn'); btnEl.classList.add('hidden');
-            if (window.haltInterval) clearInterval(window.haltInterval);
-            window.haltInterval = setInterval(() => { const m = Math.floor(timeLeft / 60), s = timeLeft % 60; timerEl.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; if (--timeLeft < 0) { clearInterval(window.haltInterval); btnEl.classList.remove('hidden'); } }, 1000);
-        };
-        
-        window.dismissHalt = function() { document.getElementById('halt-modal').style.display = 'none'; };
-
         window.refreshDashboard = function() {
-            if(!currentUser) return; // 恢复：未登录时不刷新图表
+            if(!currentUser) return;
             currentUnit = document.getElementById('unit-filter').value;
             const active = window.getFilteredTrades(), m = window.calcStats(active); 
             let series = [0], maxDdAbsolute = 0, currentBalance = document.getElementById('global-account-filter').value === 'ALL' ? Object.values(config.initialBalances||{}).reduce((a,b)=>a+Number(b||0), 0) : (Number(config.initialBalances[document.getElementById('global-account-filter').value]) || 0);
@@ -908,7 +1088,7 @@
             for (let d = 1; d <= days; d++) {
                 const dateObj = new Date(y, m, d), dayOfWeek = dateObj.getDay(), dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const dt = active.filter(t => t.date === dStr && t.status === 'closed');
-                const daySum = dt.reduce((s, t) => s + (currentUnit === 'usd' ? (t.actualTicks * (UNITS[t.symbol]||1)) : t.actualTicks), 0);
+                const daySum = dt.reduce((s, t) => s + window.getPnL(t, currentUnit), 0);
                 pnl += daySum; currentWeekSum += daySum; currentWeekTrades += dt.length;
                 const dateCircle = (todayStr === dateObj.toDateString()) ? `<div class="bg-primary text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] shadow-[0_0_8px_rgba(59,130,246,0.8)]">${d}</div>` : `<span class="text-[11px] text-gray-500 font-mono">${d}</span>`;
                 let emoji = '';
@@ -983,9 +1163,70 @@
             const directionCanvas = document.getElementById('directionBarChart');
             if (directionCanvas) { globalCharts.directionBar = new Chart(directionCanvas.getContext('2d'), { type: 'bar', data: { labels: dirArr.map(d => `${d.name} (${d.winRate}%)`), datasets: [{ data: dirArr.map(d => d.pnl), backgroundColor: dirArr.map(d => d.pnl >= 0 ? '#10b981' : '#ef4444'), borderRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { family: 'Courier New', weight: 'bold' } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: { family: 'Courier New' } } } } } }); }
 
-            const pMap = {}; active.forEach(t => { const sig = (t.signals||[]).sort().join('&'), key = `${t.strategies[0]}|${(t.contexts||[])[0]}|${t.session}|${sig}|${(t.entryModes||[])[0]}`; if (!pMap[key]) pMap[key] = { tags: [t.strategies[0], (t.contexts||[])[0], t.session, sig], trades: [] }; pMap[key].trades.push(t); });
-            const pScores = Object.values(pMap).map(p => ({ ...p, ...window.calcStats(p.trades) })).filter(p => p.count >= 2);
-            const top = [...pScores].filter(p => p.pnl > 0).sort((a,b) => b.pnl - a.pnl).slice(0, 3), worst = [...pScores].filter(p => p.pnl < 0).sort((a,b) => a.pnl - b.pnl).slice(0, 3); 
+            // 跨维形态全子集发掘 (Power-set Discovery Algorithm)
+            const pMap = {}; 
+            
+            // 核心引擎：提取信号的所有非空组合
+            const getPowerSet = (arr) => {
+                const results = [[]];
+                arr.forEach(item => {
+                    const length = results.length;
+                    for (let i = 0; i < length; i++) {
+                        results.push([...results[i], item]);
+                    }
+                });
+                return results.filter(set => set.length > 0);
+            };
+
+            active.forEach(t => { 
+                const strat = (t.strategies||[])[0] || 'Any Strategy';
+                const ctx = (t.contexts||[])[0] || 'Any Context';
+                const signals = t.signals && t.signals.length > 0 ? t.signals : ['No Signal'];
+                
+                // 将每笔单子的信号拆解为全组合
+                const signalSubsets = getPowerSet(signals);
+
+                signalSubsets.forEach(subset => {
+                    const sortedSubset = [...subset].sort();
+                    const key = `${strat}|${ctx}|${sortedSubset.join('+')}`;
+                    if (!pMap[key]) {
+                        pMap[key] = { tags: [strat, ctx, ...sortedSubset], trades: [] };
+                    }
+                    // 把该笔交易分配进所有匹配的子集中
+                    pMap[key].trades.push(t);
+                });
+            });
+            const pScores = Object.values(pMap).map(p => ({ ...p, ...window.calcStats(p.trades) })).filter(p => p.count >= 1); 
+            
+            // --- 新增：同源去重逻辑 (Trade-Source Deduplication) ---
+            // 如果多个不同的信号组合最终指向的是完全相同的一批单子，我们只保留标签最多（最详尽完整）的那一个组合。
+            const uniqueScoresMap = {};
+            pScores.forEach(p => {
+                // 根据这批交易的 ID 生成一个唯一的 Hash 签名
+                const tradeIdsHash = p.trades.map(t => t.id).sort().join(',');
+                if (!uniqueScoresMap[tradeIdsHash]) {
+                    uniqueScoresMap[tradeIdsHash] = p;
+                } else {
+                    // 如果签名相同，说明是同一批交易的子集，此时只保留标签更长（信号更完整）的形态
+                    if (p.tags.length > uniqueScoresMap[tradeIdsHash].tags.length) {
+                        uniqueScoresMap[tradeIdsHash] = p;
+                    }
+                }
+            });
+            const uniqueScores = Object.values(uniqueScoresMap);
+            // -------------------------------------------------------------------
+
+            // 重构排序权重(Edge Scoring)：不再被纯数量(count)霸榜，而是寻找【胜率最高】且【平均单笔盈亏最大】的黄金共振组合。
+            const top = [...uniqueScores]
+                .filter(p => p.pnl > 0)
+                .sort((a,b) => (b.winRate - a.winRate) || ((b.pnl / b.count) - (a.pnl / a.count)))
+                .slice(0, 4); // 扩充为展示前 4 名
+                
+            const worst = [...uniqueScores]
+                .filter(p => p.pnl < 0)
+                .sort((a,b) => (a.winRate - b.winRate) || ((a.pnl / a.count) - (b.pnl / b.count)))
+                .slice(0, 4); 
+            
             const renderP = (p) => { const color = p.pnl >= 0 ? 'text-success' : 'text-danger', displayWR = p.pnl >= 0 ? p.winRate : p.impact; return `<div class="p-4 border rounded-xl bg-panel border-white/5 hover:bg-white/[0.03] transition-colors"><div class="flex flex-wrap gap-1 mb-3">${p.tags.map(tag => `<span class="px-2 py-0.5 rounded bg-black/50 text-[10px] text-gray-400 font-bold border border-white/5">${tag || 'Any'}</span>`).join('')}</div><div class="flex justify-between items-end"><div class="text-[10px] text-gray-500">${p.count} tr</div><div class="text-right font-mono font-bold ${color}">${p.pnl > 0 ? '+' : ''}${p.pnl.toFixed(0)} <span class="text-[9px] opacity-70 ml-2">NET: ${displayWR}%</span></div></div></div>`; };
             const tCont = document.getElementById('top-edges-container'); if(tCont) tCont.innerHTML = top.length ? top.map(renderP).join('') : '<div class="p-4 text-xs text-gray-500 italic text-center border border-white/5 rounded-xl bg-panel">尚未发现稳定的盈利形态。</div>';
             const lCont = document.getElementById('top-leaks-container'); if(lCont) lCont.innerHTML = worst.length ? worst.map(renderP).join('') : '<div class="p-4 text-xs text-gray-500 italic text-center border border-white/5 rounded-xl bg-panel">Great! No recurring leaks.</div>';
@@ -1083,10 +1324,79 @@
         window.editRule = async function(oldRule) { const newVal = await Dialog.show({ title: '修改规则', type: 'prompt', defaultValue: oldRule }); if(newVal && newVal.trim() !== oldRule) { const clean = newVal.trim(), idx = tagPool.complianceRules.indexOf(oldRule); if(idx > -1) { tagPool.complianceRules[idx] = clean; if(window.currentForm.compliance[oldRule] !== undefined) { window.currentForm.compliance[clean] = window.currentForm.compliance[oldRule]; delete window.currentForm.compliance[oldRule]; } window.saveTagPoolToCloud(); window.renderComplianceRules(); } } };
         window.deleteRule = async function(rule) { const confirmed = await Dialog.show({ title: '删除规则', message: `确定删除吗？`, type: 'confirm' }); if(confirmed) { tagPool.complianceRules = tagPool.complianceRules.filter(r => r !== rule); delete window.currentForm.compliance[rule]; window.saveTagPoolToCloud(); window.renderComplianceRules(); } };
 
-        window.updateEntryCalc = function() { const sym = document.getElementById('symbol').value, u = UNITS[sym] || 5, rt = parseFloat(document.getElementById('risk-ticks').value); if(!isNaN(rt)) document.getElementById('risk-usd').value = (rt * u).toFixed(2); const tt = parseFloat(document.getElementById('target-ticks').value); if(!isNaN(tt)) document.getElementById('target-usd').value = (tt * u).toFixed(2); };
-        window.updateExitCalc = function() { const actual = parseFloat(document.getElementById('exit-ticks').value), editId = document.getElementById('edit-exit-id').value; let active = editId ? trades.find(t => t.id === parseInt(editId)) : window.getActiveTrade(); if(!active) return; if(!isNaN(actual)) { const usd = actual * (UNITS[active.symbol] || 5), el = document.getElementById('exit-usd'); el.value = usd.toFixed(2); el.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold ${usd>=0?'text-success':'text-danger'}`; } };
+        window.handleSymbolChange = function() {
+            const sym = document.getElementById('symbol').value;
+            if (sym === 'CUSTOM') document.getElementById('custom-symbol-container').classList.remove('hidden');
+            else document.getElementById('custom-symbol-container').classList.add('hidden');
+            window.updateEntryCalc();
+        };
 
-        // 【新增】：BE 状态一键切换逻辑
+        window.lastChangedTarget = 'ticks';
+
+        window.updateEntryCalc = function() { 
+            const u = window.getCurrentTickValue();
+            const rtInput = document.getElementById('risk-ticks');
+            const ruInput = document.getElementById('risk-usd');
+            const ttInput = document.getElementById('target-ticks');
+            const tuInput = document.getElementById('target-usd');
+            
+            const rt = parseFloat(rtInput.value); 
+            const ru = parseFloat(ruInput.value);
+
+            document.getElementById('calc-stop-ticks').value = rtInput.value;
+            document.getElementById('calc-risk-usd').value = ruInput.value;
+            
+            // 核心: 不再覆盖原有的美元数值，而是推算出你需要交易的手数
+            let lots = 0;
+            if (!isNaN(rt) && rt > 0 && !isNaN(ru) && ru > 0) {
+                lots = ru / (rt * u);
+            }
+            document.getElementById('calc-suggested-lots').innerText = isNaN(lots) || !isFinite(lots) || lots === 0 ? '0.00' : lots.toFixed(2);
+
+            // 联动：当你的交易手数(Lots)发生变化时，目标金额或点数会自动自适应
+            if (window.lastChangedTarget === 'ticks') {
+                const tt = parseFloat(ttInput.value);
+                if (!isNaN(tt) && lots > 0) {
+                    tuInput.value = (tt * u * lots).toFixed(2);
+                } else if (isNaN(tt)) {
+                    tuInput.value = '';
+                }
+            } else {
+                const tu = parseFloat(tuInput.value);
+                if (!isNaN(tu) && lots > 0 && u > 0) {
+                    ttInput.value = (tu / (u * lots)).toFixed(1);
+                } else if (isNaN(tu)) {
+                    ttInput.value = '';
+                }
+            }
+        };
+
+        window.handleTargetChange = function(source) {
+            window.lastChangedTarget = source;
+            window.updateEntryCalc();
+        };
+
+        window.syncCalcToMain = function(source) {
+            if (source === 'ticks') {
+                document.getElementById('risk-ticks').value = document.getElementById('calc-stop-ticks').value;
+            } else if (source === 'usd') {
+                document.getElementById('risk-usd').value = document.getElementById('calc-risk-usd').value;
+            }
+            window.updateEntryCalc(); 
+        };
+
+        window.updateExitCalc = function() { 
+            const actual = parseFloat(document.getElementById('exit-ticks').value), editId = document.getElementById('edit-exit-id').value; 
+            let active = editId ? trades.find(t => t.id === parseInt(editId)) : window.getActiveTrade(); 
+            if(!active) return; 
+            if(!isNaN(actual)) { 
+                const usd = actual * (active.tickValue || UNITS[active.symbol] || 5); 
+                const el = document.getElementById('exit-usd'); 
+                el.value = usd.toFixed(2); 
+                el.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold ${usd>=0?'text-success':'text-danger'}`; 
+            } 
+        };
+
         window.toggleBE = function(isChecked) {
             const usd = document.getElementById('exit-usd');
             const ticks = document.getElementById('exit-ticks');
@@ -1104,21 +1414,37 @@
             }
         };
 
-        // ========== 云端提交逻辑 ==========
         window.handleEntrySubmit = async function(e) {
             e.preventDefault(); if (window.currentForm.accounts.length === 0) { alert("请选择或添加一个账号！"); return; }
             const btn = document.getElementById('entry-submit-btn'); btn.disabled = true; btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 上传中...';
 
             const idInput = document.getElementById('edit-trade-id').value, id = idInput ? parseInt(idInput) : Date.now(), existing = idInput ? trades.find(t => t.id === id) : null;
-            const newTrade = { id: id, status: existing ? existing.status : 'open', symbol: document.getElementById('symbol').value, direction: document.getElementById('direction').value, date: document.getElementById('trade-date').value, entryTime: document.getElementById('entry-time').value, session: document.getElementById('session').value, riskTicks: parseFloat(document.getElementById('risk-ticks').value) || 0, riskUsd: parseFloat(document.getElementById('risk-usd').value) || 0, targetTicks: parseFloat(document.getElementById('target-ticks').value) || 0, targetUsd: parseFloat(document.getElementById('target-usd').value) || 0, accounts: [...window.currentForm.accounts], strategies: [...window.currentForm.strategies], signals: [...window.currentForm.signals], moods: [...window.currentForm.moods], locations: [...window.currentForm.locations], contexts: [...window.currentForm.contexts], entryModes: [...window.currentForm.entryModes], compliance: {...window.currentForm.compliance} };
-            if (existing) { newTrade.exitTime = existing.exitTime || ''; newTrade.actualTicks = existing.actualTicks || 0; newTrade.actualUsd = existing.actualUsd || 0; newTrade.exitMood = existing.exitMood || []; newTrade.notes = existing.notes || ''; newTrade.entryImage = existing.entryImage || null; newTrade.exitImage = existing.exitImage || null; }
+            const newTrade = { 
+                id: id, status: existing ? existing.status : 'open', 
+                symbol: window.getCurrentSymbolName(), 
+                tickValue: window.getCurrentTickValue(),
+                direction: document.getElementById('direction').value, 
+                date: document.getElementById('trade-date').value, 
+                entryTime: document.getElementById('entry-time').value, 
+                session: document.getElementById('session').value, 
+                riskTicks: parseFloat(document.getElementById('risk-ticks').value) || 0, 
+                riskUsd: parseFloat(document.getElementById('risk-usd').value) || 0, 
+                targetTicks: parseFloat(document.getElementById('target-ticks').value) || 0, 
+                targetUsd: parseFloat(document.getElementById('target-usd').value) || 0, 
+                accounts: [...window.currentForm.accounts], strategies: [...window.currentForm.strategies], signals: [...window.currentForm.signals], moods: [...window.currentForm.moods], locations: [...window.currentForm.locations], contexts: [...window.currentForm.contexts], entryModes: [...window.currentForm.entryModes], compliance: {...window.currentForm.compliance} 
+            };
+            if (existing) { newTrade.exitTime = existing.exitTime || ''; newTrade.actualTicks = existing.actualTicks || 0; newTrade.actualUsd = existing.actualUsd || 0; newTrade.exitMood = existing.exitMood || []; newTrade.notes = existing.notes || ''; newTrade.analysisImage = existing.analysisImage || null; newTrade.entryImage = existing.entryImage || null; newTrade.exitImage = existing.exitImage || null; }
 
             try {
+                if (window.tempAnalysisImage === 'REMOVE') { if (newTrade.analysisImage) { try{ await deleteObject(ref(storage, newTrade.analysisImage)); }catch(e){} } newTrade.analysisImage = null; } 
+                else if (window.tempAnalysisImage) { newTrade.analysisImage = await uploadImageToStorage(window.tempAnalysisImage, id, 'analysis'); }
+                
                 if (window.tempEntryImage === 'REMOVE') { if (newTrade.entryImage) { try{ await deleteObject(ref(storage, newTrade.entryImage)); }catch(e){} } newTrade.entryImage = null; } 
                 else if (window.tempEntryImage) { newTrade.entryImage = await uploadImageToStorage(window.tempEntryImage, id, 'entry'); }
+                
                 const isHalt = !existing && window.checkDiscipline(newTrade);
                 await window.saveTradeToCloud(newTrade);
-                if (isHalt) { window.closeEntryModal(); window.updateButtonState(); window.triggerHalt(); return; }
+                if (isHalt) { window.closeEntryModal(); window.triggerHalt(); return; }
                 window.closeEntryModal(); window.updateButtonState();
             } catch (error) { alert('上传失败: ' + error.message); } 
             finally { btn.disabled = false; btn.innerText = '入场开单'; }
@@ -1131,15 +1457,14 @@
             let isBE = document.getElementById('in-be') ? document.getElementById('in-be').checked : false;
             let finalTicks = isBE ? 0 : parseFloat(document.getElementById('exit-ticks').value);
             let finalUsd = isBE ? 0 : parseFloat(document.getElementById('exit-usd').value);
-            if (isNaN(finalTicks)) finalTicks = 0;
-            if (isNaN(finalUsd)) finalUsd = 0;
+            if (isNaN(finalTicks)) finalTicks = 0; if (isNaN(finalUsd)) finalUsd = 0;
 
             active.status = 'closed'; active.exitTime = document.getElementById('exit-time').value; active.actualTicks = finalTicks; active.actualUsd = finalUsd; active.exitMood = [...window.currentForm.exitMoods]; active.notes = document.getElementById('trade-notes').value;
             try {
                 if (window.tempExitImage === 'REMOVE') { if (active.exitImage) { try{ await deleteObject(ref(storage, active.exitImage)); }catch(e){} } active.exitImage = null; } 
                 else if (window.tempExitImage) { active.exitImage = await uploadImageToStorage(window.tempExitImage, active.id, 'exit'); }
                 await window.saveTradeToCloud(active); window.closeExitModal(); window.updateButtonState(); 
-                if (!editId && active.actualTicks < 0 && window.checkImmediateHalt(active.date)) { window.triggerHalt(); }
+                if (!editId && window.getPnL(active, 'tick') < 0 && window.checkImmediateHalt(active.date)) { window.triggerHalt(); }
             } catch (error) { alert('上传失败: ' + error.message); } 
             finally { btn.disabled = false; btn.innerText = '确认离场'; }
         };
@@ -1150,11 +1475,9 @@
                 const isOpen = t.status === 'open', val = window.getPnL(t, currentUnit);
                 let pnlClass = isOpen ? 'text-warning' : (val > 0 ? 'text-success' : (val < 0 ? 'text-danger' : 'text-gray-400'));
                 let pnlDisplay = isOpen ? '<span class="bg-warning/20 text-warning px-2 py-0.5 rounded text-[10px]">ACTIVE</span>' : `${val > 0 ? '+' : ''}${currentUnit === 'usd' ? '$' : ''}${Math.abs(val).toFixed(currentUnit === 'usd' ? 2 : 0)}${currentUnit === 'tick' ? 't' : ''}`;
-                
                 if (!isOpen && val === 0) pnlDisplay = `<span class="bg-gray-500/20 text-gray-400 px-2 py-0.5 rounded text-[10px] font-bold">BE (0)</span>`;
-                
                 const dirBadge = `<span class="${t.direction === 'Short' ? 'text-danger' : 'text-success'} text-[10px] ml-1 px-1 bg-white/5 rounded border border-white/10">${t.direction === 'Short' ? 'S' : 'L'}</span>`;
-                const hasMedia = t.entryImage || t.exitImage, mediaBadge = hasMedia ? `<button onclick="window.viewImages(${t.id})" class="text-gray-400 hover:text-white transition-all hover:scale-110 p-1" title="查看视觉证据">📷</button>` : `<span class="text-white/10 text-xs">--</span>`;
+                const hasMedia = t.analysisImage || t.entryImage || t.exitImage, mediaBadge = hasMedia ? `<button onclick="window.viewImages(${t.id})" class="text-gray-400 hover:text-white transition-all hover:scale-110 p-1" title="查看视觉证据">📷</button>` : `<span class="text-white/10 text-xs">--</span>`;
 
                 return `<tr class="border-b border-white/5 text-xs hover:bg-white/[0.02] transition-colors"><td class="py-3 px-4"><input type="checkbox" class="bulk-checkbox trade-checkbox" value="${t.id}" onchange="window.updateSelectedCount()"></td><td class="py-3 px-4"><div class="font-mono text-gray-400">${t.date}</div><div class="text-[9px] text-gray-500 mt-0.5">${t.entryTime||'--:--'} ${t.exitTime ? '→ '+t.exitTime : ''}</div></td><td class="py-3 px-4"><div class="font-bold text-white">${t.symbol} ${dirBadge}</div><div class="text-[9px] text-gray-400 mt-0.5">${(t.accounts||[])[0]} | ${t.session}</div></td><td class="py-3 px-4"><div class="text-primary font-bold">${(t.strategies||[]).join(', ')}</div></td><td class="py-3 px-4 text-center">${mediaBadge}</td><td class="py-3 px-4 text-right font-mono font-bold ${pnlClass}">${pnlDisplay}</td><td class="py-3 px-4 text-right"><button onclick="window.editEntry(${t.id})" class="mx-1 text-primary hover:text-blue-400 transition-colors" title="编辑进场">📝</button>${!isOpen ? `<button onclick="window.editExit(${t.id})" class="mx-1 text-success hover:text-emerald-400 transition-colors" title="编辑出场">🏁</button>` : ''}<button onclick="window.deleteTrade(${t.id})" class="mx-1 text-gray-500 hover:text-danger transition-colors" title="删除记录">✕</button></td></tr>`;
             }).join('');
@@ -1163,18 +1486,36 @@
 
         window.editEntry = function(id) {
             const t = trades.find(tr => tr.id === id); if (!t) return;
-            document.getElementById('edit-trade-id').value = t.id; document.getElementById('symbol').value = t.symbol || 'NQ'; document.getElementById('direction').value = t.direction || 'Long'; document.getElementById('trade-date').value = t.date; document.getElementById('entry-time').value = t.entryTime || ''; document.getElementById('session').value = t.session || 'NY';
-            document.getElementById('risk-ticks').value = t.riskTicks || 20; document.getElementById('risk-usd').value = t.riskUsd !== undefined ? t.riskUsd : ((t.riskTicks || 20) * (UNITS[t.symbol||'NQ']||5)); document.getElementById('target-ticks').value = t.targetTicks || ''; document.getElementById('target-usd').value = t.targetUsd !== undefined ? t.targetUsd : (t.targetTicks ? t.targetTicks * (UNITS[t.symbol||'NQ']||5) : '');
+            document.getElementById('edit-trade-id').value = t.id; 
+            
+            const isCustom = !['NQ', 'ES', 'GC', 'MNQ', 'MES'].includes(t.symbol);
+            if (isCustom) {
+                document.getElementById('symbol').value = 'CUSTOM';
+                document.getElementById('custom-symbol-container').classList.remove('hidden');
+                document.getElementById('custom-symbol-name').value = t.symbol;
+                document.getElementById('custom-symbol-value').value = t.tickValue || 1;
+            } else {
+                document.getElementById('symbol').value = t.symbol || 'NQ';
+                document.getElementById('custom-symbol-container').classList.add('hidden');
+            }
+
+            document.getElementById('direction').value = t.direction || 'Long'; document.getElementById('trade-date').value = t.date; document.getElementById('entry-time').value = t.entryTime || ''; document.getElementById('session').value = t.session || 'NY';
+            document.getElementById('risk-ticks').value = t.riskTicks !== undefined ? t.riskTicks : ''; 
+            document.getElementById('risk-usd').value = t.riskUsd !== undefined ? t.riskUsd : ((t.riskTicks || 0) * (t.tickValue || UNITS[t.symbol||'NQ']||5) || ''); 
+            document.getElementById('target-ticks').value = t.targetTicks || ''; document.getElementById('target-usd').value = t.targetUsd !== undefined && t.targetUsd !== 0 ? t.targetUsd : (t.targetTicks ? t.targetTicks * (t.tickValue || UNITS[t.symbol||'NQ']||5) : '');
             Object.keys(typeToPlural).forEach(type => { if (type !== 'exitMood') { window.currentForm[typeToPlural[type]] = [...(t[typeToPlural[type]] || [])]; window.renderSelectedTags(type); } });
-            window.currentForm.compliance = {...t.compliance}; window.renderComplianceRules(); 
+            window.currentForm.compliance = {...t.compliance}; window.renderComplianceRules(); window.updateEntryCalc(); 
+            
+            if (t.analysisImage) { showImagePreview('analysis', t.analysisImage); window.tempAnalysisImage = null; } else { document.getElementById('analysis-dropzone').classList.remove('has-image'); document.getElementById('analysis-preview').src = ''; }
             if (t.entryImage) { showImagePreview('entry', t.entryImage); window.tempEntryImage = null; } else { document.getElementById('entry-dropzone').classList.remove('has-image'); document.getElementById('entry-preview').src = ''; }
+            
             document.getElementById('entry-modal').classList.remove('hidden'); document.getElementById('entry-modal').classList.add('flex'); 
         };
 
         window.editExit = function(id) {
             const t = trades.find(tr => tr.id === id); if (!t) return;
             document.getElementById('edit-exit-id').value = t.id; document.getElementById('close-info-header').innerHTML = `<div><span class="text-primary font-bold mr-2">${t.symbol}</span> <span>${t.date} ${t.entryTime}</span></div><div>Strategy: <span class="text-white">${(t.strategies||[]).join(', ')}</span></div>`; document.getElementById('exit-time').value = t.exitTime || ''; document.getElementById('exit-ticks').value = t.actualTicks || 0;
-            const initUsd = t.actualUsd !== undefined ? t.actualUsd : ((t.actualTicks || 0) * (UNITS[t.symbol]||5)), usdEl = document.getElementById('exit-usd'); usdEl.value = initUsd.toFixed(2); usdEl.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold ${initUsd>0?'text-success':(initUsd<0?'text-danger':'text-gray-400')}`;
+            const initUsd = t.actualUsd !== undefined ? t.actualUsd : ((t.actualTicks || 0) * (t.tickValue || UNITS[t.symbol]||5)), usdEl = document.getElementById('exit-usd'); usdEl.value = initUsd.toFixed(2); usdEl.className = `w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold ${initUsd>0?'text-success':(initUsd<0?'text-danger':'text-gray-400')}`;
             document.getElementById('trade-notes').value = t.notes || ''; window.currentForm.exitMoods = [...(t.exitMood || t.moods || [])]; window.renderSelectedTags('exitMood'); window.updateExitCalc();
             if (t.exitImage) { showImagePreview('exit', t.exitImage); window.tempExitImage = null; } else { document.getElementById('exit-dropzone').classList.remove('has-image'); document.getElementById('exit-preview').src = ''; }
             document.getElementById('close-modal').classList.remove('hidden'); document.getElementById('close-modal').classList.add('flex');
@@ -1187,8 +1528,8 @@
         window.showDayDetail = function(date) { const dt = window.getFilteredTrades().filter(t => t.date === date && t.status === 'closed'); if(!dt.length) return; document.getElementById('day-detail-modal').classList.remove('hidden'); document.getElementById('day-detail-modal').classList.add('flex'); document.getElementById('day-modal-title').innerText = `Log: ${date}`; document.getElementById('day-modal-content').innerHTML = dt.map(t => `<div class="p-3 bg-white/5 rounded border border-white/10 flex justify-between items-center"><div><div class="text-sm font-bold text-white">${t.symbol} <span class="text-gray-500 text-xs font-mono ml-2">${t.entryTime} - ${t.exitTime}</span></div><div class="text-[9px] text-gray-500 mt-1">${(t.accounts||[])[0]}</div></div><div class="text-sm font-bold ${window.getPnL(t, currentUnit)>0?'text-success':(window.getPnL(t, currentUnit)<0?'text-danger':'text-gray-400')}">${window.getPnL(t, currentUnit)}${currentUnit==='usd'?'$':'t'}</div></div>`).join(''); };
         window.closeDayModal = function() { document.getElementById('day-detail-modal').classList.add('hidden'); document.getElementById('day-detail-modal').classList.remove('flex'); };
         
-        window.openEntryModal = function() { document.getElementById('trade-date').valueAsDate = new Date(); document.getElementById('entry-time').value = new Date().toTimeString().slice(0,5); window.updateEntryCalc(); document.getElementById('entry-modal').classList.remove('hidden'); document.getElementById('entry-modal').classList.add('flex'); };
-        window.closeEntryModal = function() { document.getElementById('entry-modal').classList.add('hidden'); document.getElementById('entry-modal').classList.remove('flex'); document.getElementById('entry-form').reset(); document.getElementById('edit-trade-id').value = ''; window.currentForm = { accounts: [], signals: [], strategies: [], moods: [], exitMoods: [], locations: [], contexts: [], entryModes: [], compliance: {} }; Object.keys(typeToPlural).forEach(window.renderSelectedTags); window.tempEntryImage = null; document.getElementById('entry-dropzone').classList.remove('has-image'); document.getElementById('entry-preview').src = ''; document.getElementById('entry-file-input').value = ''; };
+        window.openEntryModal = function() { document.getElementById('trade-date').valueAsDate = new Date(); document.getElementById('entry-time').value = new Date().toTimeString().slice(0,5); document.getElementById('risk-ticks').value = ''; document.getElementById('risk-usd').value = ''; document.getElementById('target-ticks').value = ''; document.getElementById('target-usd').value = ''; window.updateEntryCalc(); document.getElementById('entry-modal').classList.remove('hidden'); document.getElementById('entry-modal').classList.add('flex'); };
+        window.closeEntryModal = function() { document.getElementById('entry-modal').classList.add('hidden'); document.getElementById('entry-modal').classList.remove('flex'); document.getElementById('entry-form').reset(); document.getElementById('edit-trade-id').value = ''; window.currentForm = { accounts: [], signals: [], strategies: [], moods: [], exitMoods: [], locations: [], contexts: [], entryModes: [], compliance: {} }; Object.keys(typeToPlural).forEach(window.renderSelectedTags); window.tempEntryImage = null; window.tempAnalysisImage = null; document.getElementById('entry-dropzone').classList.remove('has-image'); document.getElementById('entry-preview').src = ''; document.getElementById('entry-file-input').value = ''; document.getElementById('analysis-dropzone').classList.remove('has-image'); document.getElementById('analysis-preview').src = ''; document.getElementById('analysis-file-input').value = ''; document.getElementById('symbol').value = 'NQ'; window.handleSymbolChange(); };
         window.openExitModal = function(activeTrade) { if(!activeTrade) return; document.getElementById('close-info-header').innerHTML = `<div><span class="text-primary font-bold mr-2">${activeTrade.symbol}</span> <span>${activeTrade.date} ${activeTrade.entryTime}</span></div><div>Strategy: <span class="text-white">${activeTrade.strategies.join(', ')}</span></div>`; document.getElementById('exit-time').value = new Date().toTimeString().slice(0,5); document.getElementById('close-modal').classList.remove('hidden'); document.getElementById('close-modal').classList.add('flex'); };
         
         window.closeExitModal = function() { 
@@ -1210,7 +1551,6 @@
             } 
         };
 
-        // >>> 以下是补充的 Settings 及数据相关函数 <<<
         window.renderSettings = function() {
             const container = document.getElementById('initial-balance-grid'); if(!container) return;
             container.innerHTML = (tagPool.accounts||[]).map(acc => `<div class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 hover:border-white/20 transition-colors"><span class="text-sm font-bold text-gray-300 truncate pr-2">${acc}</span><div class="flex items-center bg-black/50 border border-white/10 rounded-lg px-2 focus-within:border-primary"><span class="text-gray-500 mr-1">$</span><input type="number" class="bg-transparent py-1.5 w-20 text-right text-sm font-mono outline-none text-white" value="${config.initialBalances[acc] || 0}" onchange="window.updateConfigBalance('${acc}', this.value)"></div></div>`).join('');
@@ -1220,7 +1560,7 @@
 
         window.updateConfigBalance = function(acc, val) { config.initialBalances[acc] = parseFloat(val) || 0; window.saveConfigToCloud(); };
         window.updateConfig = function(key, val) { config[key] = parseFloat(val) || 0; window.saveConfigToCloud(); };
-        
+
         window.resetData = async function() { 
             if (confirm("⚠️ 确定清空所有数据吗？这将永久删除您的所有文字和截图记录！")) { 
                 if(!currentUser) return;
