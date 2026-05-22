@@ -384,10 +384,10 @@
                     </div>
 
                     <div class="p-4 bg-base/50 rounded-lg border border-white/5 grid grid-cols-2 md:grid-cols-4 gap-4 shadow-inner">
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Risk(t)</label><input type="number" id="risk-ticks" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono" placeholder="Ticks" required oninput="window.updateEntryCalc()"></div>
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Risk($)</label><input type="number" id="risk-usd" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono text-warning" placeholder="USD" required oninput="window.updateEntryCalc()"></div>
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Target(t)</label><input type="number" id="target-ticks" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono" placeholder="Ticks" oninput="window.handleTargetChange('ticks')"></div>
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Target($)</label><input type="number" id="target-usd" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono text-success" placeholder="USD" oninput="window.handleTargetChange('usd')"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Risk(t)</label><input type="number" id="risk-ticks" step="any" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono" placeholder="Ticks" required oninput="window.updateEntryCalc()"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Risk($)</label><input type="number" id="risk-usd" step="any" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono text-warning" placeholder="USD" required oninput="window.updateEntryCalc()"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Target(t)</label><input type="number" id="target-ticks" step="any" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono" placeholder="Ticks" oninput="window.handleTargetChange('ticks')"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Target($)</label><input type="number" id="target-usd" step="any" class="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-primary font-mono text-success" placeholder="USD" oninput="window.handleTargetChange('usd')"></div>
                     </div>
                 </form>
             </div>
@@ -407,15 +407,18 @@
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <span class="text-xs text-gray-500">Stop Ticks</span>
-                            <input type="number" id="calc-stop-ticks" class="w-20 bg-black/50 border border-white/10 rounded p-1 text-xs text-right outline-none focus:border-primary font-mono" oninput="window.syncCalcToMain('ticks')">
+                            <input type="number" id="calc-stop-ticks" step="any" class="w-20 bg-black/50 border border-white/10 rounded p-1 text-xs text-right outline-none focus:border-primary font-mono" oninput="window.syncCalcToMain('ticks')">
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-xs text-gray-500">Risk ($)</span>
-                            <input type="number" id="calc-risk-usd" class="w-20 bg-black/50 border border-white/10 rounded p-1 text-xs text-right text-warning outline-none focus:border-primary font-mono" oninput="window.syncCalcToMain('usd')">
+                            <input type="number" id="calc-risk-usd" step="any" class="w-20 bg-black/50 border border-white/10 rounded p-1 text-xs text-right text-warning outline-none focus:border-primary font-mono" oninput="window.syncCalcToMain('usd')">
                         </div>
-                        <div class="pt-3 border-t border-white/5 flex justify-between items-center">
-                            <span class="text-xs font-bold text-white">Suggested Lots</span>
-                            <span id="calc-suggested-lots" class="text-lg font-black text-primary font-mono">0.00</span>
+                        <div class="pt-3 border-t border-white/5 flex justify-between items-start">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-white">Suggested Lots</span>
+                                <span id="calc-actual-risk" class="text-[9px] mt-1 hidden font-mono"></span>
+                            </div>
+                            <span id="calc-suggested-lots" class="text-lg font-black text-primary font-mono">0</span>
                         </div>
                     </div>
                 </div>
@@ -485,11 +488,11 @@
                         </div>
                         <div class="space-y-1">
                             <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Final PnL (Ticks)</label>
-                            <input type="number" id="exit-ticks" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono" placeholder="+/-" required oninput="updateExitCalc()">
+                            <input type="number" id="exit-ticks" step="any" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono" placeholder="+/-" required oninput="updateExitCalc()">
                         </div>
                         <div class="space-y-1">
                             <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Final PnL ($ USD)</label>
-                            <input type="number" id="exit-usd" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold" placeholder="+/- $" required>
+                            <input type="number" id="exit-usd" step="any" class="w-full bg-base border border-white/10 rounded-lg h-[42px] px-3 text-sm outline-none focus:border-success font-mono font-bold" placeholder="+/- $" required>
                         </div>
                     </div>
 
@@ -820,7 +823,7 @@
         };
 
         // ==========================================
-        // 【升级】统一资金计算口径及品种动态
+        // 统一资金计算口径及品种动态
         // ==========================================
         window.getCurrentTickValue = function() {
             const sym = document.getElementById('symbol').value;
@@ -1346,12 +1349,32 @@
             document.getElementById('calc-stop-ticks').value = rtInput.value;
             document.getElementById('calc-risk-usd').value = ruInput.value;
             
-            // 核心: 不再覆盖原有的美元数值，而是推算出你需要交易的手数
+            // 核心: 不再覆盖原有的美元数值，而是推算出你需要交易的整数手数
             let lots = 0;
+            let actualRiskUsd = 0;
             if (!isNaN(rt) && rt > 0 && !isNaN(ru) && ru > 0) {
-                lots = ru / (rt * u);
+                // 四舍五入取整，确保合约手数为整数
+                lots = Math.round(ru / (rt * u));
+                // 如果计算出来不足一手，但用户又填了 risk，强制保底 1 手
+                if (lots === 0) lots = 1;
+                actualRiskUsd = lots * rt * u;
             }
-            document.getElementById('calc-suggested-lots').innerText = isNaN(lots) || !isFinite(lots) || lots === 0 ? '0.00' : lots.toFixed(2);
+            
+            document.getElementById('calc-suggested-lots').innerText = isNaN(lots) || !isFinite(lots) ? '0' : lots;
+            
+            const actualRiskEl = document.getElementById('calc-actual-risk');
+            if (lots > 0) {
+                actualRiskEl.innerText = `实际 Risk: $${actualRiskUsd.toFixed(2)}`;
+                actualRiskEl.classList.remove('hidden');
+                // 如果实际承担的风险 > 设定的风险，标红提示；否则绿色
+                if (actualRiskUsd > ru) {
+                    actualRiskEl.className = "text-[9px] mt-1 font-mono text-danger";
+                } else {
+                    actualRiskEl.className = "text-[9px] mt-1 font-mono text-success";
+                }
+            } else {
+                actualRiskEl.classList.add('hidden');
+            }
 
             // 联动：当你的交易手数(Lots)发生变化时，目标金额或点数会自动自适应
             if (window.lastChangedTarget === 'ticks') {
