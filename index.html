@@ -155,9 +155,15 @@
                         <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         <span>Connecting Cloud...</span>
                     </div>
+                    <!-- 新增：品种筛选器 -->
+                    <select id="global-symbol-filter" class="bg-white/5 border border-white/10 text-sm rounded-lg px-3 py-2 outline-none focus:border-primary" onchange="refreshDashboard()">
+                        <option value="ALL">所有品种 (All Symbols)</option>
+                    </select>
+                    <!-- 升级：单位切换器中加入 R -->
                     <select id="unit-filter" class="bg-white/5 border border-white/10 text-sm rounded-lg px-3 py-2 outline-none focus:border-primary" onchange="refreshDashboard()">
                         <option value="tick">全局单位: Ticks</option>
                         <option value="usd">全局单位: USD</option>
+                        <option value="r">全局单位: R 乘数 (R-Multiple)</option>
                     </select>
                     <select id="global-account-filter" class="bg-primary/10 text-primary font-bold border border-primary/20 text-sm rounded-lg px-3 py-2 outline-none focus:border-primary" onchange="refreshDashboard()">
                         <option value="ALL">所有账号 (All Accounts)</option>
@@ -709,6 +715,7 @@
                     actualUsd: (t.actualUsd === null || isNaN(parseFloat(t.actualUsd))) ? 0 : parseFloat(t.actualUsd),
                     actualTicks: (t.actualTicks === null || isNaN(parseFloat(t.actualTicks))) ? 0 : parseFloat(t.actualTicks)
                 }));
+                window.updateSymbolFilterOptions();
                 window.refreshDashboard();
             }, (error) => console.error(error));
         }
@@ -841,10 +848,19 @@
                 if (t.actualUsd !== undefined && t.actualUsd !== 0) return parseFloat(t.actualUsd);
                 if (t.actualTicks === 0) return 0; // Break-Even catch
                 return (parseFloat(t.actualTicks) || 0) * (t.tickValue || UNITS[t.symbol] || 1);
+            } else if (unit === 'r') {
+                // 算法核心：R = 赚的钱 / 止损承担的钱
+                const pnlUsd = (t.actualUsd !== undefined && t.actualUsd !== 0) ? parseFloat(t.actualUsd) : (parseFloat(t.actualTicks) || 0) * (t.tickValue || UNITS[t.symbol] || 1);
+                if (pnlUsd === 0) return 0;
+                let riskUsd = (t.riskUsd !== undefined && t.riskUsd > 0) ? parseFloat(t.riskUsd) : (parseFloat(t.riskTicks) || 1) * (t.tickValue || UNITS[t.symbol] || 1);
+                if (riskUsd <= 0) riskUsd = 1; // 防止除0错误
+                return pnlUsd / riskUsd;
             }
             return parseFloat(t.actualTicks) || 0; 
         };
+        
         window.getRisk = function(t, unit) { 
+            if (unit === 'r') return 1; // R模式下的风险永远是1R
             if (unit === 'usd') {
                 if (t.riskUsd !== undefined && t.riskUsd > 0) return parseFloat(t.riskUsd);
                 return (parseFloat(t.riskTicks) || 1) * (t.tickValue || UNITS[t.symbol] || 1);
@@ -996,6 +1012,14 @@
             window.endHalt();
         };
 
+        window.updateSymbolFilterOptions = function() {
+            const select = document.getElementById('global-symbol-filter'); if (!select) return;
+            const currentVal = select.value;
+            const uniqueSymbols = [...new Set(trades.map(t => t.symbol))].filter(Boolean).sort();
+            select.innerHTML = '<option value="ALL">所有品种 (All Symbols)</option>' + uniqueSymbols.map(s => `<option value="${s}">${s}</option>`).join('');
+            select.value = uniqueSymbols.includes(currentVal) ? currentVal : 'ALL';
+        };
+
         window.updateButtonState = function() {
             const active = window.getActiveTrade();
             const btn = document.getElementById('main-logger-btn');
@@ -1018,7 +1042,14 @@
         };
 
         window.toggleMainModal = function() { const active = window.getActiveTrade(); if (active) window.openExitModal(active); else window.openEntryModal(); };
-        window.getFilteredTrades = function() { const acc = document.getElementById('global-account-filter').value; return acc === 'ALL' ? trades : trades.filter(t => (t.accounts||[]).includes(acc)); };
+        window.getFilteredTrades = function() { 
+            const acc = document.getElementById('global-account-filter').value; 
+            const sym = document.getElementById('global-symbol-filter').value;
+            let filtered = trades;
+            if (acc !== 'ALL') filtered = filtered.filter(t => (t.accounts||[]).includes(acc));
+            if (sym !== 'ALL') filtered = filtered.filter(t => t.symbol === sym);
+            return filtered;
+        };
 
         window.switchView = function(id, btn) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
@@ -1045,7 +1076,8 @@
                 let peak = Math.max(...series); if (peak - currentBalance > maxDdAbsolute) maxDdAbsolute = peak - currentBalance;
             });
 
-            const unitSym = currentUnit === 'usd' ? '$' : 't', colorSharpe = m.sharpe >= 1 ? 'text-success' : (m.sharpe > 0 ? 'text-warning' : 'text-danger');
+            const unitSym = currentUnit === 'usd' ? '$' : (currentUnit === 'r' ? 'R' : 't');
+            const colorSharpe = m.sharpe >= 1 ? 'text-success' : (m.sharpe > 0 ? 'text-warning' : 'text-danger');
             const colorPF = m.pf >= 1.5 ? '#10b981' : (m.pf >= 1 ? '#f59e0b' : '#ef4444'), pnlColor = m.pnl >= 0 ? 'text-success' : 'text-danger';
             const avgWinRatio = (Number(m.avgWin) / ((Number(m.avgWin) + Number(m.avgLoss)) || 1)) * 100, breakEvens = m.count - m.wins - m.losses, exactWR = m.count ? ((m.wins / m.count) * 100).toFixed(2) : "0.00";
 
@@ -1058,15 +1090,21 @@
             let compHtml = `<div class="mt-4 space-y-3 w-full">`;
             cArr.forEach(c => {
                 const color = c.pnl >= 0 ? 'bg-success' : 'bg-danger', textColor = c.pnl >= 0 ? 'text-success' : 'text-danger', maxAbs = Math.max(...cArr.map(x => Math.abs(x.pnl))) || 1, width = Math.max(2, (Math.abs(c.pnl) / maxAbs) * 100);
-                compHtml += `<div class="flex flex-col"><div class="flex justify-between items-end text-[10px] mb-1"><span class="text-gray-400 font-bold">${c.name}</span><span class="font-mono font-bold ${textColor}">${c.pnl > 0 ? '+' : ''}${c.pnl.toFixed(0)}</span></div><div class="w-full bg-white/5 rounded-full h-1.5 overflow-hidden"><div class="${color} h-full rounded-full transition-all" style="width: ${width}%"></div></div></div>`;
+                compHtml += `<div class="flex flex-col"><div class="flex justify-between items-end text-[10px] mb-1"><span class="text-gray-400 font-bold">${c.name}</span><span class="font-mono font-bold ${textColor}">${c.pnl > 0 ? '+' : ''}${c.pnl.toFixed(currentUnit==='r'?2:0)}</span></div><div class="w-full bg-white/5 rounded-full h-1.5 overflow-hidden"><div class="${color} h-full rounded-full transition-all" style="width: ${width}%"></div></div></div>`;
             });
             compHtml += `</div>`;
 
-            document.getElementById('dashboard-cards').innerHTML = `<div class="glass-card p-5 flex flex-col justify-between group relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2 z-10">Total PnL</div><div class="text-4xl font-black font-mono ${pnlColor} z-10">${m.pnl >= 0 ? '+' : ''}${m.pnl.toFixed(2)}<span class="text-sm opacity-50 ml-1">${unitSym}</span></div><div class="text-[10px] text-gray-400 mt-3 flex justify-between z-10 pt-2 border-t border-white/5"><span>Max DD: <span class="text-danger">-${maxDdAbsolute.toFixed(0)}${unitSym}</span></span><span>Exp: <span class="${m.ev >= 0 ? 'text-success' : 'text-danger'}">${m.ev >= 0 ? '+' : ''}${m.ev}${unitSym}</span></span></div></div><div class="glass-card p-5 flex justify-between items-center relative group"><div class="flex-1 z-10"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Sharpe Ratio</div><div class="text-3xl font-black font-mono ${colorSharpe}">${m.sharpe}</div><div class="text-[10px] text-gray-400 mt-2">Return/Risk</div></div><div class="relative w-16 h-16 flex-shrink-0 flex items-center justify-center z-10 bg-white/5 rounded-full border border-white/10 shadow-inner"><svg class="w-8 h-8 ${colorSharpe}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg></div></div><div class="glass-card p-5 flex flex-col justify-center group"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Compliance Impact</div>${compHtml}</div><div class="glass-card p-5 border-white/5 flex justify-between items-center relative group"><div class="flex-1 z-10 flex flex-col justify-center h-full"><div class="flex items-center text-sm text-gray-300 font-bold tracking-wider mb-1">Trade win %</div><div class="text-4xl font-black font-mono text-white mt-1">${exactWR}%</div></div><div class="flex flex-col items-center justify-center z-10 w-28 shrink-0"><div class="relative w-full h-12">${createSemiCircleGauge(m.count ? (m.wins / m.count) * 100 : 0)}</div><div class="flex justify-center space-x-1.5 mt-3"><span class="bg-[#0f2e1b] text-success px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold">${m.wins}</span><span class="bg-[#1e1e2d] text-indigo-400 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold">${breakEvens}</span><span class="bg-[#3b1216] text-danger px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold">${m.losses}</span></div></div></div><div class="glass-card p-5 border-white/5 flex justify-between items-center relative group"><div class="flex-1 z-10"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Profit Factor</div><div class="text-3xl font-black font-mono text-white">${m.pf}</div><div class="text-[10px] text-gray-400 mt-2">Gross PnL Ratio</div></div><div class="relative w-[72px] h-[72px] flex-shrink-0 flex items-center justify-center z-10 mr-4">${createDonutChart((parseFloat(m.pf)/3)*100, colorPF)}</div></div><div class="glass-card p-5 border-white/5 flex flex-col justify-between group"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-3">Avg Win / Avg Loss</div><div class="flex w-full h-2 rounded-full overflow-hidden bg-black/50 mb-3 shadow-inner"><div class="bg-success" style="width: ${avgWinRatio}%"></div><div class="bg-danger flex-1"></div></div><div class="flex items-end justify-between mt-auto pt-2 border-t border-white/5"><div><div class="text-2xl font-black font-mono text-white leading-none">${m.avgRR}</div><div class="text-[9px] text-gray-500 font-bold uppercase mt-1 tracking-wider">Avg R:R</div></div><div class="text-right"><div class="text-success font-mono text-sm font-bold">+${currentUnit==='usd'?'$':''}${m.avgWin}</div><div class="text-danger font-mono text-sm font-bold">-${currentUnit==='usd'?'$':''}${m.avgLoss}</div></div></div></div>`;
+            const formatVal = (val, isTotal = false) => {
+                if(currentUnit === 'usd') return `${val >= 0 ? '+' : ''}$${Math.abs(val).toFixed(2)}`;
+                if(currentUnit === 'r') return `${val >= 0 ? '+' : ''}${val.toFixed(2)}R`;
+                return `${val >= 0 ? '+' : ''}${val.toFixed(isTotal ? 2 : 0)}t`;
+            };
+
+            document.getElementById('dashboard-cards').innerHTML = `<div class="glass-card p-5 flex flex-col justify-between group relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2 z-10">Total PnL</div><div class="text-4xl font-black font-mono ${pnlColor} z-10">${formatVal(m.pnl, true)}</div><div class="text-[10px] text-gray-400 mt-3 flex justify-between z-10 pt-2 border-t border-white/5"><span>Max DD: <span class="text-danger">-${maxDdAbsolute.toFixed(currentUnit==='tick'?0:2)}${unitSym}</span></span><span>Exp: <span class="${m.ev >= 0 ? 'text-success' : 'text-danger'}">${formatVal(parseFloat(m.ev))}</span></span></div></div><div class="glass-card p-5 flex justify-between items-center relative group"><div class="flex-1 z-10"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Sharpe Ratio</div><div class="text-3xl font-black font-mono ${colorSharpe}">${m.sharpe}</div><div class="text-[10px] text-gray-400 mt-2">Return/Risk</div></div><div class="relative w-16 h-16 flex-shrink-0 flex items-center justify-center z-10 bg-white/5 rounded-full border border-white/10 shadow-inner"><svg class="w-8 h-8 ${colorSharpe}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg></div></div><div class="glass-card p-5 flex flex-col justify-center group"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Compliance Impact</div>${compHtml}</div><div class="glass-card p-5 border-white/5 flex justify-between items-center relative group"><div class="flex-1 z-10 flex flex-col justify-center h-full"><div class="flex items-center text-sm text-gray-300 font-bold tracking-wider mb-1">Trade win %</div><div class="text-4xl font-black font-mono text-white mt-1">${exactWR}%</div></div><div class="flex flex-col items-center justify-center z-10 w-28 shrink-0"><div class="relative w-full h-12">${createSemiCircleGauge(m.count ? (m.wins / m.count) * 100 : 0)}</div><div class="flex justify-center space-x-1.5 mt-3"><span class="bg-[#0f2e1b] text-success px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold">${m.wins}</span><span class="bg-[#1e1e2d] text-indigo-400 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold">${breakEvens}</span><span class="bg-[#3b1216] text-danger px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold">${m.losses}</span></div></div></div><div class="glass-card p-5 border-white/5 flex justify-between items-center relative group"><div class="flex-1 z-10"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Profit Factor</div><div class="text-3xl font-black font-mono text-white">${m.pf}</div><div class="text-[10px] text-gray-400 mt-2">Gross PnL Ratio</div></div><div class="relative w-[72px] h-[72px] flex-shrink-0 flex items-center justify-center z-10 mr-4">${createDonutChart((parseFloat(m.pf)/3)*100, colorPF)}</div></div><div class="glass-card p-5 border-white/5 flex flex-col justify-between group"><div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-3">Avg Win / Avg Loss</div><div class="flex w-full h-2 rounded-full overflow-hidden bg-black/50 mb-3 shadow-inner"><div class="bg-success" style="width: ${avgWinRatio}%"></div><div class="bg-danger flex-1"></div></div><div class="flex items-end justify-between mt-auto pt-2 border-t border-white/5"><div><div class="text-2xl font-black font-mono text-white leading-none">${m.avgRR}</div><div class="text-[9px] text-gray-500 font-bold uppercase mt-1 tracking-wider">Avg R:R</div></div><div class="text-right"><div class="text-success font-mono text-sm font-bold">${formatVal(parseFloat(m.avgWin))}</div><div class="text-danger font-mono text-sm font-bold">-${formatVal(parseFloat(m.avgLoss)).replace('+','').replace('-','')}</div></div></div></div>`;
             
             if (globalCharts.equity) globalCharts.equity.destroy();
             const canvas = document.getElementById('balanceLineChart');
-            if (canvas) { globalCharts.equity = new Chart(canvas.getContext('2d'), { type: 'line', data: { labels: tradeLabels, datasets: [{ data: series, borderWidth: 2, fill: {target: 'origin', above: 'rgba(59, 130, 246, 0.15)', below: 'rgba(239, 68, 68, 0.15)'}, segment: {borderColor: ctx => ctx.p1.parsed.y < 0 ? '#ef4444' : '#3b82f6'}, pointRadius: 0, pointHoverRadius: 4, tension: 0.1 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 9 }, maxTicksLimit: 5 } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', callback: v => (currentUnit==='usd'?'$':'')+v+(currentUnit==='tick'?'t':'') } } }, interaction: { mode: 'index', intersect: false } } }); }
+            if (canvas) { globalCharts.equity = new Chart(canvas.getContext('2d'), { type: 'line', data: { labels: tradeLabels, datasets: [{ data: series, borderWidth: 2, fill: {target: 'origin', above: 'rgba(59, 130, 246, 0.15)', below: 'rgba(239, 68, 68, 0.15)'}, segment: {borderColor: ctx => ctx.p1.parsed.y < 0 ? '#ef4444' : '#3b82f6'}, pointRadius: 0, pointHoverRadius: 4, tension: 0.1 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 9 }, maxTicksLimit: 5 } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', callback: v => (currentUnit==='usd'?'$':(currentUnit==='r'?'':''))+v+(currentUnit==='tick'?'t':(currentUnit==='r'?'R':'')) } } }, interaction: { mode: 'index', intersect: false } } }); }
             
             window.drawDailyPnlChart(dailyPnLMap); window.renderCalendar(); window.updateButtonState(); window.renderSettings();
             if (!document.getElementById('view-analytics').classList.contains('hidden')) window.renderAnalytics(); 
@@ -1077,7 +1115,7 @@
             const canvas = document.getElementById('dailyPnlBarChart'); if (!canvas) return;
             const dates = Object.keys(dailyPnLMap).sort((a,b) => new Date(a) - new Date(b)), data = dates.map(d => dailyPnLMap[d]), colors = data.map(v => v > 0 ? '#10b981' : (v < 0 ? '#ef4444' : '#6b7280')), labels = dates.map(d => { const p = d.split('-'); return p.length===3 ? `${p[1]}/${p[2]}` : d; });
             if (globalCharts.dailyPnl) globalCharts.dailyPnl.destroy();
-            globalCharts.dailyPnl = new Chart(canvas.getContext('2d'), { type: 'bar', data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 2 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 9 } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', callback: v => (currentUnit==='usd'?'$':'')+v+(currentUnit==='tick'?'t':'') } } } } });
+            globalCharts.dailyPnl = new Chart(canvas.getContext('2d'), { type: 'bar', data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 2 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 9 } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', callback: v => (currentUnit==='usd'?'$':(currentUnit==='r'?'':''))+v+(currentUnit==='tick'?'t':(currentUnit==='r'?'R':'')) } } } } });
         };
 
         window.renderCalendar = function() {
@@ -1103,7 +1141,7 @@
 
                 if (dayOfWeek === 6) {
                     const sumColor = currentWeekSum > 0 ? 'text-success' : (currentWeekSum < 0 ? 'text-danger' : 'text-gray-400');
-                    const wValStr = currentUnit === 'usd' ? (currentWeekSum < 0 ? `-$${Math.abs(currentWeekSum).toFixed(2)}` : `$${currentWeekSum.toFixed(2)}`) : `${currentWeekSum > 0 ? '+' : ''}${currentWeekSum.toFixed(0)}t`;
+                    const wValStr = currentUnit === 'usd' ? (currentWeekSum < 0 ? `-$${Math.abs(currentWeekSum).toFixed(2)}` : `$${currentWeekSum.toFixed(2)}`) : (currentUnit === 'r' ? `${currentWeekSum > 0 ? '+' : ''}${currentWeekSum.toFixed(2)}R` : `${currentWeekSum > 0 ? '+' : ''}${currentWeekSum.toFixed(0)}t`);
                     html += `<div class="bg-base/80 min-h-[90px] p-2 flex flex-col items-center border-l border-white/5 relative shadow-inner cursor-default"><div class="w-full flex justify-between items-start">${dateCircle}<span class="text-[10px]">${emoji}</span></div><div class="flex-1 flex flex-col justify-center items-center pb-2"><span class="text-[9px] text-gray-400 font-bold mb-0.5 uppercase tracking-widest">Week ${weekNum}</span><span class="text-sm font-bold font-mono ${sumColor}">${wValStr}</span><span class="text-[9px] text-gray-500 mt-1">${currentWeekTrades} tr</span></div></div>`;
                     currentWeekSum = 0; currentWeekTrades = 0; weekNum++;
                 } else {
@@ -1111,7 +1149,7 @@
                     if (dt.length > 0) {
                         bgClass = daySum > 0 ? 'bg-[#0f2e1b] hover:bg-[#153e24]' : (daySum < 0 ? 'bg-[#3b1216] hover:bg-[#4d171d]' : 'bg-white/10 hover:bg-white/20');
                         const valColor = daySum > 0 ? 'text-success' : (daySum < 0 ? 'text-danger' : 'text-gray-400');
-                        const valStr = currentUnit === 'usd' ? (daySum < 0 ? `-$${Math.abs(daySum).toFixed(2)}` : `$${daySum.toFixed(2)}`) : `${daySum > 0 ? '+' : ''}${daySum.toFixed(0)}t`;
+                        const valStr = currentUnit === 'usd' ? (daySum < 0 ? `-$${Math.abs(daySum).toFixed(2)}` : `$${daySum.toFixed(2)}`) : (currentUnit === 'r' ? `${daySum > 0 ? '+' : ''}${daySum.toFixed(2)}R` : `${daySum > 0 ? '+' : ''}${daySum.toFixed(0)}t`);
                         dataHtml = `<div class="flex-1 flex flex-col items-center justify-center pb-2"><div class="text-[15px] font-bold font-mono ${valColor}">${valStr}</div><div class="text-[9px] ${valColor} opacity-70 mt-1 tracking-wider">${dt.length} tr</div></div>`;
                     }
                     html += `<div onclick="${dt.length > 0 ? `window.showDayDetail('${dStr}')` : ''}" class="${bgClass} min-h-[90px] p-2 flex flex-col relative ${dt.length > 0 ? 'cursor-pointer transition-colors border border-white/5' : ''}"><div class="flex justify-between items-start w-full">${dateCircle}<span class="text-[10px] drop-shadow-md">${emoji}</span></div>${dataHtml}</div>`;
@@ -1121,11 +1159,12 @@
             if (lastDay !== 6) {
                 for (let i = lastDay + 1; i < 6; i++) html += `<div class="bg-base/40 min-h-[90px]"></div>`;
                 const sumColor = currentWeekSum > 0 ? 'text-success' : (currentWeekSum < 0 ? 'text-danger' : 'text-gray-400');
-                const wValStr = currentUnit === 'usd' ? (currentWeekSum < 0 ? `-$${Math.abs(currentWeekSum).toFixed(2)}` : `$${currentWeekSum.toFixed(2)}`) : `${currentWeekSum > 0 ? '+' : ''}${currentWeekSum.toFixed(0)}t`;
+                const wValStr = currentUnit === 'usd' ? (currentWeekSum < 0 ? `-$${Math.abs(currentWeekSum).toFixed(2)}` : `$${currentWeekSum.toFixed(2)}`) : (currentUnit === 'r' ? `${currentWeekSum > 0 ? '+' : ''}${currentWeekSum.toFixed(2)}R` : `${currentWeekSum > 0 ? '+' : ''}${currentWeekSum.toFixed(0)}t`);
                 html += `<div class="bg-base/80 min-h-[90px] p-2 flex flex-col items-center border-l border-white/5 relative shadow-inner cursor-default"><div class="w-full flex justify-between items-start"><span class="text-[11px] text-gray-500 font-mono">-</span></div><div class="flex-1 flex flex-col justify-center items-center pb-2"><span class="text-[9px] text-gray-400 font-bold mb-0.5 uppercase tracking-widest">Week ${weekNum}</span><span class="text-sm font-bold font-mono ${sumColor}">${wValStr}</span><span class="text-[9px] text-gray-500 mt-1">${currentWeekTrades} tr</span></div></div>`;
             }
             grid.innerHTML = html; const pnlClass = pnl > 0 ? 'text-success' : (pnl < 0 ? 'text-danger' : 'text-gray-400');
-            header.innerHTML = `<button onclick="window.changeMonth(-1)" class="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">◀</button><div class="flex flex-col items-center justify-center"><div class="text-sm font-bold text-gray-300 mb-1 tracking-wider">Monthly P/L: <span class="${pnlClass} font-mono">${pnl > 0 ? '+' : ''}${Math.abs(pnl).toFixed(2)}${currentUnit==='usd'?'$':'t'}</span></div><div class="text-lg font-bold text-white tracking-widest uppercase">${monthNames[m]} ${y}</div></div><button onclick="window.changeMonth(1)" class="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">▶</button>`;
+            const topPnlStr = currentUnit === 'usd' ? `$${Math.abs(pnl).toFixed(2)}` : (currentUnit === 'r' ? `${Math.abs(pnl).toFixed(2)}R` : `${Math.abs(pnl).toFixed(0)}t`);
+            header.innerHTML = `<button onclick="window.changeMonth(-1)" class="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">◀</button><div class="flex flex-col items-center justify-center"><div class="text-sm font-bold text-gray-300 mb-1 tracking-wider">Monthly P/L: <span class="${pnlClass} font-mono">${pnl > 0 ? '+' : (pnl < 0 ? '-' : '')}${topPnlStr}</span></div><div class="text-lg font-bold text-white tracking-widest uppercase">${monthNames[m]} ${y}</div></div><button onclick="window.changeMonth(1)" class="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">▶</button>`;
         };
 
         window.changeMonth = function(delta) { calCurrentDate.setMonth(calCurrentDate.getMonth() + delta); window.renderCalendar(); };
@@ -1230,7 +1269,13 @@
                 .sort((a,b) => (a.winRate - b.winRate) || ((a.pnl / a.count) - (b.pnl / b.count)))
                 .slice(0, 4); 
             
-            const renderP = (p) => { const color = p.pnl >= 0 ? 'text-success' : 'text-danger', displayWR = p.pnl >= 0 ? p.winRate : p.impact; return `<div class="p-4 border rounded-xl bg-panel border-white/5 hover:bg-white/[0.03] transition-colors"><div class="flex flex-wrap gap-1 mb-3">${p.tags.map(tag => `<span class="px-2 py-0.5 rounded bg-black/50 text-[10px] text-gray-400 font-bold border border-white/5">${tag || 'Any'}</span>`).join('')}</div><div class="flex justify-between items-end"><div class="text-[10px] text-gray-500">${p.count} tr</div><div class="text-right font-mono font-bold ${color}">${p.pnl > 0 ? '+' : ''}${p.pnl.toFixed(0)} <span class="text-[9px] opacity-70 ml-2">NET: ${displayWR}%</span></div></div></div>`; };
+            const renderP = (p) => { 
+                const color = p.pnl >= 0 ? 'text-success' : 'text-danger';
+                const displayWR = p.pnl >= 0 ? p.winRate : p.impact; 
+                let pnlStr = currentUnit === 'r' ? p.pnl.toFixed(2) + 'R' : p.pnl.toFixed(0);
+                if (currentUnit === 'usd') pnlStr = '$' + p.pnl.toFixed(0);
+                return `<div class="p-4 border rounded-xl bg-panel border-white/5 hover:bg-white/[0.03] transition-colors"><div class="flex flex-wrap gap-1 mb-3">${p.tags.map(tag => `<span class="px-2 py-0.5 rounded bg-black/50 text-[10px] text-gray-400 font-bold border border-white/5">${tag || 'Any'}</span>`).join('')}</div><div class="flex justify-between items-end"><div class="text-[10px] text-gray-500">${p.count} tr</div><div class="text-right font-mono font-bold ${color}">${p.pnl > 0 ? '+' : ''}${pnlStr} <span class="text-[9px] opacity-70 ml-2">NET: ${displayWR}%</span></div></div></div>`; 
+            };
             const tCont = document.getElementById('top-edges-container'); if(tCont) tCont.innerHTML = top.length ? top.map(renderP).join('') : '<div class="p-4 text-xs text-gray-500 italic text-center border border-white/5 rounded-xl bg-panel">尚未发现稳定的盈利形态。</div>';
             const lCont = document.getElementById('top-leaks-container'); if(lCont) lCont.innerHTML = worst.length ? worst.map(renderP).join('') : '<div class="p-4 text-xs text-gray-500 italic text-center border border-white/5 rounded-xl bg-panel">Great! No recurring leaks.</div>';
             
@@ -1497,7 +1542,13 @@
             document.getElementById('history-table-body').innerHTML = active.map(t => {
                 const isOpen = t.status === 'open', val = window.getPnL(t, currentUnit);
                 let pnlClass = isOpen ? 'text-warning' : (val > 0 ? 'text-success' : (val < 0 ? 'text-danger' : 'text-gray-400'));
-                let pnlDisplay = isOpen ? '<span class="bg-warning/20 text-warning px-2 py-0.5 rounded text-[10px]">ACTIVE</span>' : `${val > 0 ? '+' : ''}${currentUnit === 'usd' ? '$' : ''}${Math.abs(val).toFixed(currentUnit === 'usd' ? 2 : 0)}${currentUnit === 'tick' ? 't' : ''}`;
+                
+                let valStr = '';
+                if (currentUnit === 'usd') valStr = `$${Math.abs(val).toFixed(2)}`;
+                else if (currentUnit === 'r') valStr = `${Math.abs(val).toFixed(2)}R`;
+                else valStr = `${Math.abs(val).toFixed(0)}t`;
+
+                let pnlDisplay = isOpen ? '<span class="bg-warning/20 text-warning px-2 py-0.5 rounded text-[10px]">ACTIVE</span>' : `${val > 0 ? '+' : (val < 0 ? '-' : '')}${valStr}`;
                 if (!isOpen && val === 0) pnlDisplay = `<span class="bg-gray-500/20 text-gray-400 px-2 py-0.5 rounded text-[10px] font-bold">BE (0)</span>`;
                 const dirBadge = `<span class="${t.direction === 'Short' ? 'text-danger' : 'text-success'} text-[10px] ml-1 px-1 bg-white/5 rounded border border-white/10">${t.direction === 'Short' ? 'S' : 'L'}</span>`;
                 const hasMedia = t.analysisImage || t.entryImage || t.exitImage, mediaBadge = hasMedia ? `<button onclick="window.viewImages(${t.id})" class="text-gray-400 hover:text-white transition-all hover:scale-110 p-1" title="查看视觉证据">📷</button>` : `<span class="text-white/10 text-xs">--</span>`;
@@ -1548,7 +1599,18 @@
         window.updateSelectedCount = function() { const selected = document.querySelectorAll('.trade-checkbox:checked').length, btn = document.getElementById('batch-delete-btn'); if (selected > 0) { btn.classList.remove('hidden'); document.getElementById('selected-count').innerText = selected; } else { btn.classList.add('hidden'); document.getElementById('select-all-trades').checked = false; } };
         window.deleteSelectedTrades = async function() { const checkboxes = document.querySelectorAll('.trade-checkbox:checked'), idsToDelete = Array.from(checkboxes).map(cb => cb.value), confirmed = await Dialog.show({ title: '批量删除', message: `确认云端永久删除这 ${idsToDelete.length} 条记录吗？\n附带的截图也会一并销毁。`, type: 'confirm' }); if (confirmed) { idsToDelete.forEach(id => { const t = trades.find(tr => tr.id == id); if(t) window.deleteTradeFromCloud(t); }); document.getElementById('select-all-trades').checked = false; } };
         window.deleteTrade = async function(id) { const t = trades.find(tr => tr.id === id); if(!t) return; const confirmed = await Dialog.show({ title: '删除记录', message: '确定云端永久删除这条记录及其截图吗？', type: 'confirm' }); if (confirmed) { window.deleteTradeFromCloud(t); } };
-        window.showDayDetail = function(date) { const dt = window.getFilteredTrades().filter(t => t.date === date && t.status === 'closed'); if(!dt.length) return; document.getElementById('day-detail-modal').classList.remove('hidden'); document.getElementById('day-detail-modal').classList.add('flex'); document.getElementById('day-modal-title').innerText = `Log: ${date}`; document.getElementById('day-modal-content').innerHTML = dt.map(t => `<div class="p-3 bg-white/5 rounded border border-white/10 flex justify-between items-center"><div><div class="text-sm font-bold text-white">${t.symbol} <span class="text-gray-500 text-xs font-mono ml-2">${t.entryTime} - ${t.exitTime}</span></div><div class="text-[9px] text-gray-500 mt-1">${(t.accounts||[])[0]}</div></div><div class="text-sm font-bold ${window.getPnL(t, currentUnit)>0?'text-success':(window.getPnL(t, currentUnit)<0?'text-danger':'text-gray-400')}">${window.getPnL(t, currentUnit)}${currentUnit==='usd'?'$':'t'}</div></div>`).join(''); };
+        window.showDayDetail = function(date) { 
+            const dt = window.getFilteredTrades().filter(t => t.date === date && t.status === 'closed'); if(!dt.length) return; 
+            document.getElementById('day-detail-modal').classList.remove('hidden'); document.getElementById('day-detail-modal').classList.add('flex'); document.getElementById('day-modal-title').innerText = `Log: ${date}`; 
+            document.getElementById('day-modal-content').innerHTML = dt.map(t => {
+                const val = window.getPnL(t, currentUnit);
+                let valStr = '';
+                if (currentUnit === 'usd') valStr = `$${Math.abs(val).toFixed(2)}`;
+                else if (currentUnit === 'r') valStr = `${Math.abs(val).toFixed(2)}R`;
+                else valStr = `${Math.abs(val).toFixed(0)}t`;
+                return `<div class="p-3 bg-white/5 rounded border border-white/10 flex justify-between items-center"><div><div class="text-sm font-bold text-white">${t.symbol} <span class="text-gray-500 text-xs font-mono ml-2">${t.entryTime} - ${t.exitTime}</span></div><div class="text-[9px] text-gray-500 mt-1">${(t.accounts||[])[0]}</div></div><div class="text-sm font-bold ${val>0?'text-success':(val<0?'text-danger':'text-gray-400')}">${val>0?'+':(val<0?'-':'')}${valStr}</div></div>`;
+            }).join(''); 
+        };
         window.closeDayModal = function() { document.getElementById('day-detail-modal').classList.add('hidden'); document.getElementById('day-detail-modal').classList.remove('flex'); };
         
         window.openEntryModal = function() { document.getElementById('trade-date').valueAsDate = new Date(); document.getElementById('entry-time').value = new Date().toTimeString().slice(0,5); document.getElementById('risk-ticks').value = ''; document.getElementById('risk-usd').value = ''; document.getElementById('target-ticks').value = ''; document.getElementById('target-usd').value = ''; window.updateEntryCalc(); document.getElementById('entry-modal').classList.remove('hidden'); document.getElementById('entry-modal').classList.add('flex'); };
